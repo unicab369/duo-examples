@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "unistd.h": "c",
+        "wiringx.h": "c",
+        "future": "c",
+        "*.def": "c",
+        "stdio.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}
