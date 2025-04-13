@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <stdint.h>  
+#include <stdint.h>
 
+#include "utility.h"
 
 #define CHUNK_SIZE 2000
 
@@ -17,7 +18,6 @@
 
 static uint16_t BACKGROUND_COLOR = 0x0000;
 
-
 typedef struct {
     uint8_t HOST;
     int8_t MOSI;
@@ -31,18 +31,14 @@ typedef struct {
     int8_t RST;         // set to -1 when not use
 } M_Spi_Conf;
 
-void mod_spi_cmd(uint8_t cmd, M_Spi_Conf *conf) {
-    digitalWrite(conf->CS, LOW);
-    digitalWrite(conf->DC, LOW);  // Command mode
+static void send_spi_cmd(uint8_t cmd, M_Spi_Conf *conf) {
+    digitalWrite(conf->DC, 0);      // Command mode
     wiringXSPIDataRW(conf->HOST, &cmd, 1);
-    digitalWrite(conf->CS, HIGH);
 }
 
-int mod_spi_data(uint8_t *data, int len, M_Spi_Conf *conf) {
-    digitalWrite(conf->CS, LOW);
-    digitalWrite(conf->DC, HIGH);  // Data mode
+int send_spi_data(uint8_t *data, int len, M_Spi_Conf *conf) {
+    digitalWrite(conf->DC, 1);      // Data mode
     wiringXSPIDataRW(conf->HOST, data, len);
-    digitalWrite(conf->CS, HIGH);
     return 1;
 }
 
@@ -52,72 +48,83 @@ void modTFT_setWindow(
 ) {
     uint8_t data[] = {0x00, x0, 0x00, x1};
 
+    //# Set CS
+    digitalWrite(conf->CS, 0);
+
     //! Column Address Set: CASET
-    mod_spi_cmd(0x2A, conf);
-    mod_spi_data(data, 4, conf);
+    send_spi_cmd(0x2A, conf);
+    send_spi_data(data, 4, conf);
 
     data[1] = y0;
     data[3] = y1;
 
     //! Row Address Set: RASET
-    mod_spi_cmd(0x2B, conf);
-    mod_spi_data(data, 4, conf);
+    send_spi_cmd(0x2B, conf);
+    send_spi_data(data, 4, conf);
 
     //! Memory Write: RAMWR
-    mod_spi_cmd(0x2C, conf);  // Memory Write
+    send_spi_cmd(0x2C, conf);        // Memory Write
+
+    //# Release CS
+    digitalWrite(conf->CS, 1);
 }
 
-
 void modTFT_fillScreen(uint16_t color, M_Spi_Conf *conf) {
+    //# Set CS
+    digitalWrite(conf->CS, 0);
+
     //! Set the address window to cover the entire screen
     modTFT_setWindow(0, 0, ST7735_WIDTH - 1, ST7735_HEIGHT - 1, conf);
 
-    //! Precompute the high and low bytes of the color
+    // Precompute the high and low bytes of the color
     uint8_t color_high = color >> 8;
     uint8_t color_low = color & 0xFF;
+    uint8_t chunk[CHUNK_SIZE];              // Buffer to hold the chunk
 
-    uint8_t chunk[CHUNK_SIZE]; // Buffer to hold the chunk
-
-    //! Calculate the total number of pixels
+    // Calculate the total number of pixels
     int total_pixels = ST7735_WIDTH * ST7735_HEIGHT;
 
-    //! Fill the screen in chunks
+    // Fill the screen in chunks
     int pixels_sent = 0;
     while (pixels_sent < total_pixels) {
-        //! Determine the number of pixels to send in this chunk
-        int pixels_in_chunk = (total_pixels - pixels_sent > CHUNK_SIZE / 2)
-                                ? CHUNK_SIZE / 2
-                                : (total_pixels - pixels_sent);
+        // Determine the number of pixels to send in this chunk
+        int pixels_in_chunk = MIN(CHUNK_SIZE / 2, total_pixels - pixels_sent);
 
-        //! Fill the chunk with the color data
+        // Fill the chunk with the color data
         for (int i = 0; i < pixels_in_chunk; i++) {
             chunk[2 * i] = color_high;   // High byte
             chunk[2 * i + 1] = color_low; // Low byte
         }
 
         //! Send the chunk to the display
-        mod_spi_data(chunk, pixels_in_chunk * 2, conf);
+        send_spi_data(chunk, pixels_in_chunk * 2, conf);
 
         //! Update the number of pixels sent
         pixels_sent += pixels_in_chunk;
     }
     
-    digitalWrite(conf->CS, HIGH);
+    //# Release CS
+    digitalWrite(conf->CS, 1);
 }
 
+void modTFT_init(M_Spi_Conf *conf) {
+    //# Set CS
+    digitalWrite(conf->CS, 0);
 
-void st7735_init(M_Spi_Conf *conf) {
     //! initializeation commands
-    mod_spi_cmd(0x01, conf); // Software reset
-    mod_spi_cmd(0x11, conf); // Sleep out
+    send_spi_cmd(0x01, conf);           // Software reset
+    send_spi_cmd(0x11, conf);           // Sleep out
     
-    mod_spi_cmd(0x3A, conf);      // Set color mode
-    mod_spi_data((uint8_t[]){0x05}, 1, conf); // 16-bit color (RGB565)
+    send_spi_cmd(0x3A, conf);      // Set color mode
+    send_spi_data((uint8_t[]){0x05}, 1, conf); // 16-bit color (RGB565)
 
-    mod_spi_cmd(0x20, conf); // Inversion off
-    mod_spi_cmd(0x29, conf); // Display on
+    send_spi_cmd(0x20, conf); // Inversion off
+    send_spi_cmd(0x29, conf); // Display on
 
     modTFT_fillScreen(RED, conf); // Fill screen with black
+
+    //# Release CS
+    digitalWrite(conf->CS, 1);
 }
 
 
@@ -186,7 +193,7 @@ static void map_char_buffer(M_TFT_Text *model, uint16_t *my_buff, char c, uint8_
 //# Draw Pixel
 int st7735_draw_pixel(uint16_t color, M_Spi_Conf *conf) {
     uint8_t data[] = { color >> 8, color & 0xFF };
-    return mod_spi_data(data, 2, conf);
+    return send_spi_data(data, 2, conf);
 }
 
 
@@ -255,7 +262,7 @@ static void send_text_buffer(M_TFT_Text *model, M_Spi_Conf *config) {
 
     //! Send the buffer to the display    
     modTFT_setWindow(render_state.x0, render_state.current_y, x1, y1, config);
-    mod_spi_data((uint8_t *)frame_buff, buff_len * 2, config); // Multiply by 2 for uint16_t size
+    send_spi_data((uint8_t *)frame_buff, buff_len * 2, config); // Multiply by 2 for uint16_t size
 
     // Reset the accumulated character count and update render_start_x
     render_state.char_count = 0;

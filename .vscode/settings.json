@@ -6,7 +6,11 @@
         "*.def": "c",
         "stdio.h": "c",
         "st7735_shape.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "utility.h": "c",
+        "time.h": "c",
+        "random": "c",
+        "regex": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

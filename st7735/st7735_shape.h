@@ -6,10 +6,6 @@
 
 #include "modTFT.h"
 
-
-#define MIN(a, b) ((a < b) ? a : b)
-#define MAX(a, b) ((a > b) ? a : b)
-
 #define OUTPUT_BUFFER_SIZE 100  // Number of pixels to buffer before sending
 uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
 
@@ -56,7 +52,7 @@ void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
             printf("\n\n");
 
             modTFT_setWindow(min_x, min_y, max_x, max_y, config);
-            mod_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
+            send_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
             
             // Reset for next segment
             buffer_count = 0;
@@ -88,7 +84,7 @@ void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
         printf("\n\n");
 
         modTFT_setWindow(min_x, min_y, max_x, max_y, config);
-        mod_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
+        send_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
     }
 }
 
@@ -132,7 +128,7 @@ void st7735_draw_horLine(
         );
         
         //# Send the buffer
-        mod_spi_data((uint8_t*)chunk_buffer, chunk_width * thickness * 2, config);
+        send_spi_data((uint8_t*)chunk_buffer, chunk_width * thickness * 2, config);
     }
 
     free(chunk_buffer);
@@ -176,7 +172,7 @@ void st7735_draw_verLine(
         );
         
         //# Send the buffer
-        mod_spi_data((uint8_t*)chunk_buffer, chunk_height * thickness * 2, config);
+        send_spi_data((uint8_t*)chunk_buffer, chunk_height * thickness * 2, config);
     }
 
     free(chunk_buffer);
