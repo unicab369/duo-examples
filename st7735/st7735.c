@@ -2,11 +2,14 @@
 #include <unistd.h>
 #include <stdint.h>  
 
+#include <wiringx.h>
+
 #include "font_bitmap.h"
 
-// #include "mod_st7735.h"
 #include "st7735_shape.h"
 
+#define SPI_NUM     2
+#define SPI_SPEED   20E6
 
 int main() {
     if(wiringXSetup("milkv_duo", NULL) == -1) {
@@ -15,13 +18,30 @@ int main() {
     }
 
     M_Spi_Conf conf = {
-        .host = 2,
-        .cs = 15,      //! the main cs pin
-        .dc = 5,       // set to -1 when not use
-        .rst = 4       // set to -1 when not use
+        .HOST = 2,
+        .CS = 15,      //! the main cs pin
+        .DC = 5,       // set to -1 when not use
+        .RST = 4       // set to -1 when not use
     };
 
-    mod_spi_init(&conf, 10E6);
+    if (wiringXSPISetup(SPI_NUM, SPI_SPEED) <0) {
+        printf("SPI Setup failed.\n");
+        return -1;
+    }
+
+    if (conf.CS > 0) pinMode(conf.CS, PINMODE_OUTPUT);
+    if (conf.DC > 0) pinMode(conf.DC, PINMODE_OUTPUT);
+
+    if (conf.RST > 0) {
+        pinMode(conf.RST, PINMODE_OUTPUT);
+        digitalWrite(conf.RST, HIGH);
+
+        digitalWrite(conf.RST, LOW);
+        delayMicroseconds(10);
+        digitalWrite(conf.RST, HIGH);
+    }
+
+
     st7735_init(&conf);
 
     M_TFT_Text tft_text = {
@@ -47,15 +67,15 @@ int main() {
         // st7735_draw_horLine(80, 10, 100, PURPLE, 3, &conf);
         // st7735_draw_verLine(80, 10, 100, PURPLE, 3, &conf);
 
-        // st7735_fill_screen(RED, &conf);
-        digitalWrite(CS_PIN, HIGH);
+        // modTFT_fillScreen(RED, &conf);
+        digitalWrite(conf.CS, HIGH);
         sleep(1);
 
-        // st7735_fill_screen(BLUE, &conf);
-        digitalWrite(CS_PIN, LOW);
+        // modTFT_fillScreen(BLUE, &conf);
+        digitalWrite(conf.CS, LOW);
         sleep(1);
 
-        printf("IM HERE 2222\n");
+        printf("IM HERE 666666\n");
     }
 
     return 0;

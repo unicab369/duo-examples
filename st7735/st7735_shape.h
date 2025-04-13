@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "mod_st7735.h"
+#include "modTFT.h"
 
 
 #define MIN(a, b) ((a < b) ? a : b)
@@ -55,7 +55,7 @@ void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
             }
             printf("\n\n");
 
-            st7735_set_address_window(min_x, min_y, max_x, max_y, config);
+            modTFT_setWindow(min_x, min_y, max_x, max_y, config);
             mod_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
             
             // Reset for next segment
@@ -87,7 +87,7 @@ void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
         }
         printf("\n\n");
 
-        st7735_set_address_window(min_x, min_y, max_x, max_y, config);
+        modTFT_setWindow(min_x, min_y, max_x, max_y, config);
         mod_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
     }
 }
@@ -126,7 +126,7 @@ void st7735_draw_horLine(
         uint16_t chunk_width = MIN(safe_pixels, x1 - current_x + 1);
         
         //# Set window
-        st7735_set_address_window(
+        modTFT_setWindow(
             current_x, y,
             current_x + chunk_width - 1, y + thickness - 1, config
         );
@@ -170,7 +170,7 @@ void st7735_draw_verLine(
         uint16_t chunk_height = MIN(safe_pixels, y1 - current_y + 1);
         
         //# Set window
-        st7735_set_address_window(
+        modTFT_setWindow(
             x, current_y,
             x + thickness - 1, current_y + chunk_height - 1, config
         );

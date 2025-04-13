@@ -2,7 +2,8 @@
 #include <unistd.h>
 #include <stdint.h>  
 
-#include "mod_spi.h"
+
+#define CHUNK_SIZE 2000
 
 #define ST7735_WIDTH 128
 #define ST7735_HEIGHT 160
@@ -16,8 +17,36 @@
 
 static uint16_t BACKGROUND_COLOR = 0x0000;
 
-//# Set address window
-void st7735_set_address_window(
+
+typedef struct {
+    uint8_t HOST;
+    int8_t MOSI;
+    int8_t MISO;
+    int8_t CLK;
+    int8_t CS;      //! the main cs pin
+
+    //! dc and rst are not part of SPI interface
+    //! They are used for some display modules
+    int8_t DC;          // set to -1 when not use
+    int8_t RST;         // set to -1 when not use
+} M_Spi_Conf;
+
+void mod_spi_cmd(uint8_t cmd, M_Spi_Conf *conf) {
+    digitalWrite(conf->CS, LOW);
+    digitalWrite(conf->DC, LOW);  // Command mode
+    wiringXSPIDataRW(conf->HOST, &cmd, 1);
+    digitalWrite(conf->CS, HIGH);
+}
+
+int mod_spi_data(uint8_t *data, int len, M_Spi_Conf *conf) {
+    digitalWrite(conf->CS, LOW);
+    digitalWrite(conf->DC, HIGH);  // Data mode
+    wiringXSPIDataRW(conf->HOST, data, len);
+    digitalWrite(conf->CS, HIGH);
+    return 1;
+}
+
+void modTFT_setWindow(
     uint8_t x0, uint8_t y0,
     uint8_t x1, uint8_t y1, M_Spi_Conf *conf
 ) {
@@ -38,15 +67,15 @@ void st7735_set_address_window(
     mod_spi_cmd(0x2C, conf);  // Memory Write
 }
 
-void st7735_fill_screen(uint16_t color, M_Spi_Conf *conf) {
+
+void modTFT_fillScreen(uint16_t color, M_Spi_Conf *conf) {
     //! Set the address window to cover the entire screen
-    st7735_set_address_window(0, 0, ST7735_WIDTH - 1, ST7735_HEIGHT - 1, conf);
+    modTFT_setWindow(0, 0, ST7735_WIDTH - 1, ST7735_HEIGHT - 1, conf);
 
     //! Precompute the high and low bytes of the color
     uint8_t color_high = color >> 8;
     uint8_t color_low = color & 0xFF;
 
-    #define CHUNK_SIZE 2000
     uint8_t chunk[CHUNK_SIZE]; // Buffer to hold the chunk
 
     //! Calculate the total number of pixels
@@ -73,7 +102,7 @@ void st7735_fill_screen(uint16_t color, M_Spi_Conf *conf) {
         pixels_sent += pixels_in_chunk;
     }
     
-    digitalWrite(CS_PIN, HIGH);
+    digitalWrite(conf->CS, HIGH);
 }
 
 
@@ -88,7 +117,7 @@ void st7735_init(M_Spi_Conf *conf) {
     mod_spi_cmd(0x20, conf); // Inversion off
     mod_spi_cmd(0x29, conf); // Display on
 
-    st7735_fill_screen(RED, conf); // Fill screen with black
+    modTFT_fillScreen(RED, conf); // Fill screen with black
 }
 
 
@@ -171,7 +200,7 @@ static void send_text_buffer(M_TFT_Text *model, M_Spi_Conf *config) {
     uint16_t arr_width = char_width * render_state.char_count;
     uint16_t buff_len = arr_width * font_height;
 
-    uint16_t frame_buff = (uint16_t)malloc(buff_len * sizeof(uint16_t));
+    uint16_t *frame_buff = (uint16_t*)malloc(buff_len * sizeof(uint16_t));
     if (!frame_buff) {
         fprintf(stderr, "Memory allocation failed!\n");
         return; // Error handling
@@ -225,7 +254,7 @@ static void send_text_buffer(M_TFT_Text *model, M_Spi_Conf *config) {
     }
 
     //! Send the buffer to the display    
-    st7735_set_address_window(render_state.x0, render_state.current_y, x1, y1, config);
+    modTFT_setWindow(render_state.x0, render_state.current_y, x1, y1, config);
     mod_spi_data((uint8_t *)frame_buff, buff_len * 2, config); // Multiply by 2 for uint16_t size
 
     // Reset the accumulated character count and update render_start_x
