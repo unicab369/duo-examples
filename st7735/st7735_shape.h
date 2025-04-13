@@ -7,9 +7,10 @@
 #include "modTFT.h"
 
 #define OUTPUT_BUFFER_SIZE 100  // Number of pixels to buffer before sending
-uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
+#define MAX_CHUNK_PIXELS 1024
 
-uint16_t MAX_SAFE_MEMORY = 1024;
+
+uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
 
 //# Draw line
 void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
@@ -90,92 +91,57 @@ void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 
 //# Draw horizontal line
 void st7735_draw_horLine(
-    uint16_t y, uint16_t x0, uint16_t x1, 
-    uint16_t color, uint16_t thickness, 
+    int y, int x0, int x1, 
+    uint16_t color, int thickness, 
     M_Spi_Conf *config
 ) {
-    if (x0 > x1) { uint16_t tmp = x0; x0 = x1; x1 = tmp; }
-    uint16_t length = x1 - x0 + 1;
+    if (x0 > x1) { int tmp = x0; x0 = x1; x1 = tmp; }
 
-    //! Calculate SAFE buffer size (max 1KB to prevent stack overflow)
-    uint16_t safe_pixels = MAX(MAX_SAFE_MEMORY / (thickness * 2), 1);
-    uint16_t *chunk_buffer = (uint16_t *)malloc(safe_pixels * thickness * sizeof(uint16_t));
-    if (!chunk_buffer) return;
+    static uint32_t chunk_buffer[(MAX_CHUNK_PIXELS + 1) / 2];
 
-    //! Fill buffer
-    // uint16_t chunk_buffer[safe_pixels * thickness];     // allocate buffer
-    uint32_t *buf32 = (uint32_t*)chunk_buffer;
+    // Pack 2 pixels per word
     uint32_t color32 = (color << 16) | color;
-    uint16_t total_words = (safe_pixels * thickness) / 2;
-
-    for (uint16_t word = 0; word < total_words; word++) {
-        buf32[word] |= color32; // Writes 2 pixels per iteration
-    }
-    
-    //! Handle odd pixels
-    if ((safe_pixels * thickness) % 2) {
-        chunk_buffer[safe_pixels * thickness - 1] |= color;
+    for (int i = 0; i < sizeof(chunk_buffer)/sizeof(chunk_buffer[0]); i++) {
+        chunk_buffer[i] = color32;  // Compiler may optimize this
     }
 
-    //! Draw in safe chunks
-    for (uint16_t current_x = x0; current_x <= x1; current_x += safe_pixels) {
-        uint16_t chunk_width = MIN(safe_pixels, x1 - current_x + 1);
-        
-        //# Set window
-        modTFT_setWindow(
-            current_x, y,
-            current_x + chunk_width - 1, y + thickness - 1, config
-        );
-        
-        //# Send the buffer
-        send_spi_data((uint8_t*)chunk_buffer, chunk_width * thickness * 2, config);
-    }
+    // Draw chunks
+    int chunk_bytes;
+    for (int x = x0; x <= x1; x += MAX_CHUNK_PIXELS) {
+        int width = MIN(MAX_CHUNK_PIXELS, x1 - x + 1);
+        chunk_bytes = width * thickness * 2;
 
-    free(chunk_buffer);
+        modTFT_setWindow(x, y, x + width - 1, y + thickness - 1, config);
+        send_spi_data((uint8_t*)chunk_buffer, chunk_bytes, config);
+    }
 }
 
 //# Draw vertical line
 void st7735_draw_verLine(
-    uint16_t x, uint16_t y0, uint16_t y1,
-    uint16_t color, uint16_t thickness,
+    int x, int y0, int y1,
+    uint16_t color, int thickness,
     M_Spi_Conf *config
 ) {
-    if (y0 > y1) { uint16_t tmp = y0; y0 = y1; y1 = tmp; }
-    uint16_t length = y1 - y0 + 1;
+    if (y0 > y1) { int tmp = y0; y0 = y1; y1 = tmp; }
 
-    //! Calculate safe buffer size (same 1KB limit)
-    uint16_t safe_pixels = MAX(MAX_SAFE_MEMORY / (thickness * 2), 1);
-    uint16_t *chunk_buffer = (uint16_t *)malloc(safe_pixels * thickness * sizeof(uint16_t));
-    if (!chunk_buffer) return;
+    static uint32_t chunk_buffer[(MAX_CHUNK_PIXELS + 1) / 2];
 
-    //! Fill buffer
-    uint32_t *buf32 = (uint32_t*)chunk_buffer;
+    // Pack 2 pixels per word
     uint32_t color32 = (color << 16) | color;
-    uint16_t total_words = (safe_pixels * thickness) / 2;
-    for (uint16_t word = 0; word < total_words; word++) {
-        buf32[word] |= color32; // Write 2 pixels per iteration
+    for (int i = 0; i < sizeof(chunk_buffer)/sizeof(chunk_buffer[0]); i++) {
+        chunk_buffer[i] = color32;  // Compiler may optimize this
     }
 
-    //! Handle odd pixels
-    if ((safe_pixels * thickness) % 2) {
-        chunk_buffer[safe_pixels * thickness - 1] |= color;
-    }
-
-    //! Draw vertical strips in chunks
-    for (uint16_t current_y = y0; current_y <= y1; current_y += safe_pixels) {
-        uint16_t chunk_height = MIN(safe_pixels, y1 - current_y + 1);
+    // Draw chunks
+    int chunk_bytes;
+    for (int y = y0; y <= y1; y += MAX_CHUNK_PIXELS) {
+        int height = MIN(MAX_CHUNK_PIXELS, y1 - y + 1);
+        chunk_bytes = height * thickness * 2;
         
-        //# Set window
-        modTFT_setWindow(
-            x, current_y,
-            x + thickness - 1, current_y + chunk_height - 1, config
-        );
-        
-        //# Send the buffer
-        send_spi_data((uint8_t*)chunk_buffer, chunk_height * thickness * 2, config);
+        //# Set window & send data
+        modTFT_setWindow(x, y, x + thickness - 1, y + height - 1, config);
+        send_spi_data((uint8_t*)chunk_buffer, chunk_bytes, config);
     }
-
-    free(chunk_buffer);
 }
 
 //# Draw Rectangle

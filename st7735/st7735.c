@@ -8,7 +8,7 @@
 #include "st7735_shape.h"
 
 #define SPI_NUM     2
-#define SPI_SPEED   20E6
+#define SPI_SPEED   50E6
 
 M_Spi_Conf conf = {
     .HOST = 2,
@@ -17,8 +17,18 @@ M_Spi_Conf conf = {
     .RST = 4       // set to -1 when not use
 };
 
+#define LINE_COLLOR RED
+
 void fill_screen() {
-    modTFT_fillScreen(BLUE, &conf);
+    modTFT_fillRect(BLUE, ST7735_WIDTH, ST7735_HEIGHT, &conf);
+}
+
+void draw_horLine() {
+    st7735_draw_horLine(80, 10, 100, LINE_COLLOR, 3, &conf);
+}
+
+void draw_verLine() {
+    st7735_draw_verLine(80, 10, 100, LINE_COLLOR, 3, &conf);
 }
 
 int main() {
@@ -32,24 +42,11 @@ int main() {
         return -1;
     }
 
-    if (conf.CS > 0) pinMode(conf.CS, PINMODE_OUTPUT);
-    if (conf.DC > 0) pinMode(conf.DC, PINMODE_OUTPUT);
-
-    if (conf.RST > 0) {
-        pinMode(conf.RST, PINMODE_OUTPUT);
-        digitalWrite(conf.RST, HIGH);
-
-        digitalWrite(conf.RST, LOW);
-        delayMicroseconds(10);
-        digitalWrite(conf.RST, HIGH);
-    }
-
-
     modTFT_init(&conf);
 
     M_TFT_Text tft_text = {
         .x = 0, .y = 0,
-        .color = PURPLE,
+        .color = RED,
         .page_wrap = 1,
         .word_wrap = 1,
 
@@ -62,21 +59,25 @@ int main() {
                 "\n\nThis is a new line. Continue with this line."
     };
 
-    st7735_draw_horLine(80, 10, 100, PURPLE, 3, &conf);
-    st7735_draw_verLine(80, 10, 100, PURPLE, 3, &conf);
-    st7735_draw_rectangle(20, 20, 50, 50, PURPLE, 3, &conf);
 
     while(1) {
-        st7735_draw_horLine(80, 10, 100, PURPLE, 3, &conf);
-        st7735_draw_verLine(80, 10, 100, PURPLE, 3, &conf);
-        digitalWrite(conf.CS, HIGH);
-        sleep(1);
+        uint64_t elapse;
+        
+        // elapse = get_elapse_time_ms(fill_screen);
+        // printf("fill_rect time: %llu us\n", elapse);       
 
-        uint64_t elapse = get_elapse_time_ms(fill_screen);
-        printf("Elapse time: %llu us\n", elapse);        
+        elapse = get_elapse_time_ms(draw_horLine);
+        printf("hor_line time: %llu us\n", elapse);       
+
+        elapse = get_elapse_time_ms(draw_verLine);
+        printf("ver_line timez: %llu us\n", elapse);
+
+        printf("zzzzzzzzzzzzzz\n");
+        digitalWrite(conf.CS, HIGH);
+        delayMicroseconds(400E3);
 
         digitalWrite(conf.CS, LOW);
-        sleep(1);
+        delayMicroseconds(400E3);
     }
 
     return 0;
