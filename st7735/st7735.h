@@ -6,6 +6,8 @@
 
 #include "font_bitmap.h"
 #include "modTFT/modTFT_shape.h"
+#include "modTFT/modTFT_text.h"
+
 
 #define SPI_NUM     2
 #define SPI_SPEED   50E6
@@ -71,7 +73,7 @@ void draw_filled_poly() {
     );
 }
 
-int main() {
+int st7735_init() {
     if(wiringXSetup("milkv_duo", NULL) == -1) {
         wiringXGC();
         return 1;
@@ -100,47 +102,48 @@ int main() {
                 "\n\nThis is a new line. Continue with this line."
     };
 
+    modTFT_drawText(&tft_text, &conf);
 
-    while(1) {
-        uint64_t elapse;
+    return 1;
+}
+
+void st7735_task(int print_log) {
+    uint64_t elapse;
         
-        // elapse = get_elapse_time_ms(fill_screen);
-        // printf("fill_rect time: %llu us\n", elapse);       
+    // elapse = get_elapse_time_us(fill_screen);
+    // printf("fill_rect time: %llu us\n", elapse);       
 
-        elapse = get_elapse_time_ms(draw_horLine);
-        printf("hor_line:\t\t %llu us\n", elapse);       
+    elapse = get_elapse_time_us(draw_horLine);
+    if (print_log) printf("hor_line:\t\t %llu us\n", elapse);       
 
-        elapse = get_elapse_time_ms(draw_verLine);
-        printf("ver_line:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_verLine);
+    if (print_log) printf("ver_line:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(draw_line1);
-        printf("draw_line1:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_line1);
+    if (print_log) printf("draw_line1:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(fill_rect);
-        printf("fill_rect:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(fill_rect);
+    if (print_log) printf("fill_rect:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(draw_circle);
-        printf("draw_circle:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_circle);
+    if (print_log) printf("draw_circle:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(fill_circle);
-        printf("fill_circle:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(fill_circle);
+    if (print_log) printf("fill_circle:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(draw_rectangle);
-        printf("draw_rect:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_rectangle);
+    if (print_log) printf("draw_rect:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(draw_poly);
-        printf("draw_poly:\t\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_poly);
+    if (print_log) printf("draw_poly:\t\t %llu us\n", elapse);
 
-        elapse = get_elapse_time_ms(draw_filled_poly);
-        printf("draw_filled_poly:\t %llu us\n", elapse);
+    elapse = get_elapse_time_us(draw_filled_poly);
+    if (print_log) printf("draw_filled_poly:\t %llu us\n", elapse);
 
-        printf("\n");
-        digitalWrite(conf.CS, HIGH);
-        delayMicroseconds(400E3);
+    if (print_log) printf("\n");
+    digitalWrite(conf.CS, HIGH);
+    delayMicroseconds(400E3);
 
-        digitalWrite(conf.CS, LOW);
-        delayMicroseconds(400E3);
-    }
-
-    return 0;
+    digitalWrite(conf.CS, LOW);
+    delayMicroseconds(400E3);
 }

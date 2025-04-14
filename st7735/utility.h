@@ -6,7 +6,7 @@
 #define DIFF(a, b)          ((a > b) ? a - b : b - a)
 #define SWAP_INT(a, b)    { int temp = a; a = b; b = temp; }
 
-static uint64_t elapse_ms(struct timespec *start) {
+static uint64_t elapse_ns(struct timespec *start) {
     struct timespec end;
     
     if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
@@ -14,21 +14,20 @@ static uint64_t elapse_ms(struct timespec *start) {
         return 0;
     }
 
-    // Calculate microseconds with proper handling of negative nanoseconds
     int64_t sec_diff = end.tv_sec - start->tv_sec;
     int64_t nsec_diff = end.tv_nsec - start->tv_nsec;
     
     // Handle negative nanoseconds (clock rollover)
     if (nsec_diff < 0) {
         sec_diff--;
-        nsec_diff += 1000000000;
+        nsec_diff += 1E9;
     }
     
-    // Convert to microseconds
-    return (sec_diff * 1000000) + (nsec_diff / 1000);
+    // return nanoseconds
+    return (sec_diff * 1E9) + nsec_diff;
 }
 
-uint64_t get_elapse_time_ms(void callback()) {
+uint64_t get_elapse_ns(void callback()) {
     struct timespec start, end;
     
     //! Start timer
@@ -40,21 +39,27 @@ uint64_t get_elapse_time_ms(void callback()) {
     //! Execute callback
     callback();
     
-    return elapse_ms(&start);
+    return elapse_ns(&start);
+}
+
+uint64_t get_elapse_time_us(void callback()) {
+    return get_elapse_ns(callback) / 1000;
 }
 
 
-static struct timespec start_timer;
 
-void start_elapse_timer() {    
-    if (clock_gettime(CLOCK_MONOTONIC, &start_timer) != 0) {
+
+static struct timespec ref_timer;
+
+void start_timer() {    
+    if (clock_gettime(CLOCK_MONOTONIC, &ref_timer) != 0) {
         perror("clock_gettime");
         return;
     }
 }
 
-uint64_t stop_elapse_timer() {
-    return elapse_ms(&start_timer);
+uint64_t stop_timer() {
+    return elapse_ns(&ref_timer);
 }
 
 void print_hex(uint8_t *data, int len) {

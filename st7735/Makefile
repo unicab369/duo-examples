@@ -1,4 +1,4 @@
-TARGET=st7735
+TARGET=milkV_mess
 
 TOOLCHAIN_PREFIX ?= riscv64-unknown-linux-gnu-
 CFLAGS ?= -O2 -Wall -static

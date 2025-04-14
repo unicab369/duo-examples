@@ -64,12 +64,8 @@ void modTFT_drawFilledCircle(
         
         // Draw vertical line from top to bottom
         modTFT_drawVerLine(
-            center_x + x,  // x position
-            top_y,         // start y (top)
-            bottom_y,      // end y (bottom)
-            color,         // color
-            1,            // thickness
-            conf          // SPI config
+            center_x + x, top_y, bottom_y,
+            color, 1, conf 
         );
     }
 }

@@ -18,7 +18,12 @@
         "ranges": "c",
         "span": "c",
         "stdlib.h": "c",
-        "modtft.h": "c"
+        "modtft.h": "c",
+        "font_bitmap.h": "c",
+        "modtft_shape.h": "c",
+        "modssd1306.h": "c",
+        "st7735.h": "c",
+        "modi2c.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
