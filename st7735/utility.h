@@ -56,3 +56,10 @@ void start_elapse_timer() {
 uint64_t stop_elapse_timer() {
     return get_elapse_ms(&start_timer);
 }
+
+void print_hex(uint8_t *data, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}

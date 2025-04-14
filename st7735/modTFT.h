@@ -20,6 +20,11 @@
 #define YELLOW      0xFFE0
 #define CYAN        0x07FF
 #define MAGENTA     0xF81F
+#define ORANGE      0xFBE0
+#define BROWN       0xA145
+#define GRAY        0x7BEF
+#define LIGHT_GRAY  0xC618
+#define DARK_GRAY   0x7BEF
 
 static uint16_t BACKGROUND_COLOR = 0x0000;
 
@@ -59,9 +64,6 @@ void modTFT_setWindow(
 ) {
     uint8_t data[] = {0x00, x0, 0x00, x1};
 
-    //# Set CS
-    digitalWrite(conf->CS, 0);
-
     //! Column Address Set: CASET
     spi_send_cmdData(0x2A, data, 4, conf);
 
@@ -72,18 +74,19 @@ void modTFT_setWindow(
 
     //! Memory Write: RAMWR
     send_spi_cmd(0x2C, conf);        // Memory Write
-
-    //# Release CS
-    digitalWrite(conf->CS, 1);
 }
 
-void modTFT_drawPixel(int x, int y, uint16_t color, M_Spi_Conf *conf) {
+void modTFT_drawPixel(
+    int x, int y, uint16_t color, M_Spi_Conf *conf
+) {
     modTFT_setWindow(x, y, x, y, conf);
 
     uint8_t data[2] = {
         (uint8_t)(color >> 8),  // High byte
         (uint8_t)(color & 0xFF) // Low byte
     };
+
+    // print_hex(data, sizeof(data));
 
     send_spi_data(data, sizeof(data), conf);
 }

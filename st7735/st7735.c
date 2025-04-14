@@ -5,7 +5,7 @@
 #include <wiringx.h>
 
 #include "font_bitmap.h"
-#include "st7735_shape.h"
+#include "modTFT_line.h"
 
 #define SPI_NUM     2
 #define SPI_SPEED   50E6
@@ -31,7 +31,6 @@ void draw_verLine() {
     modTFT_draw_verLine(80, 10, 100, LINE_COLLOR, 3, &conf);
 }
 
-
 void draw_line1() {
     draw_line_bresenham(1, 1, 100, 100, WHITE, 5, &conf);
 }
@@ -49,7 +48,7 @@ int main() {
     }
 
     modTFT_init(&conf);
-    // modTFT_fillAll(BLUE, &conf); // Fill screen with black
+    modTFT_fillAll(RED, &conf); // Fill screen with black
 
     M_TFT_Text tft_text = {
         .x = 0, .y = 0,
@@ -88,7 +87,7 @@ int main() {
         elapse = get_elapse_time_ms(draw_line1);
         printf("draw_line1 time: %llu us\n", elapse);
 
-        printf("zzzzzz\n");
+        printf("zzzz\n");
         digitalWrite(conf.CS, HIGH);
         delayMicroseconds(400E3);
 
