@@ -32,7 +32,7 @@ void draw_verLine() {
 }
 
 void draw_line1() {
-    draw_line_bresenham(1, 1, 100, 100, WHITE, 5, &conf);
+    draw_line_bresenham_slow(1, 1, 100, 100, ORANGE, 5, &conf);
 }
 
 
@@ -52,7 +52,7 @@ int main() {
 
     M_TFT_Text tft_text = {
         .x = 0, .y = 0,
-        .color = WHITE,
+        .color = ORANGE,
         .page_wrap = 1,
         .word_wrap = 1,
 
@@ -78,16 +78,10 @@ int main() {
         // elapse = get_elapse_time_ms(draw_verLine);
         // printf("ver_line time: %llu us\n", elapse);
 
-        // elapse = get_elapse_time_ms(test_draw2);
-        // printf("test_draw2 time: %llu us\n", elapse);
-
-        // elapse = get_elapse_time_ms(test_draw1);
-        // printf("test_draw1 time: %llu us\n", elapse);
-
         elapse = get_elapse_time_ms(draw_line1);
         printf("draw_line1 time: %llu us\n", elapse);
 
-        printf("zzzz\n");
+        printf("\n");
         digitalWrite(conf.CS, HIGH);
         delayMicroseconds(400E3);
 

@@ -4,9 +4,9 @@
 #define MIN(a, b)           ((a < b) ? a : b)
 #define MAX(a, b)           ((a > b) ? a : b)
 #define DIFF(a, b)          ((a > b) ? a - b : b - a)
-#define SWAP_INT16(a, b)    { int16_t temp = a; a = b; b = temp; }
+#define SWAP_INT(a, b)    { int temp = a; a = b; b = temp; }
 
-static uint64_t get_elapse_ms(struct timespec *start) {
+static uint64_t elapse_ms(struct timespec *start) {
     struct timespec end;
     
     if (clock_gettime(CLOCK_MONOTONIC, &end) != 0) {
@@ -40,7 +40,7 @@ uint64_t get_elapse_time_ms(void callback()) {
     //! Execute callback
     callback();
     
-    return get_elapse_ms(&start);
+    return elapse_ms(&start);
 }
 
 
@@ -54,7 +54,7 @@ void start_elapse_timer() {
 }
 
 uint64_t stop_elapse_timer() {
-    return get_elapse_ms(&start_timer);
+    return elapse_ms(&start_timer);
 }
 
 void print_hex(uint8_t *data, int len) {

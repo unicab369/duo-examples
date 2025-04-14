@@ -17,7 +17,8 @@
         "string_view": "c",
         "ranges": "c",
         "span": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "modtft.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
