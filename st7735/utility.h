@@ -1,9 +1,10 @@
 #include <time.h>
 
 
-#define MIN(a, b) ((a < b) ? a : b)
-#define MAX(a, b) ((a > b) ? a : b)
-#define ABS(a) ((a < 0) ? -a : a)
+#define MIN(a, b)           ((a < b) ? a : b)
+#define MAX(a, b)           ((a > b) ? a : b)
+#define DIFF(a, b)          ((a > b) ? a - b : b - a)
+#define SWAP_INT16(a, b)    { int16_t temp = a; a = b; b = temp; }
 
 static uint64_t get_elapse_ms(struct timespec *start) {
     struct timespec end;

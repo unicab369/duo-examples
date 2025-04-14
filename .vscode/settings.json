@@ -10,7 +10,8 @@
         "utility.h": "c",
         "time.h": "c",
         "random": "c",
-        "regex": "c"
+        "regex": "c",
+        "string.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

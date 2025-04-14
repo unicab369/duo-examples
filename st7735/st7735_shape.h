@@ -12,85 +12,8 @@
 
 uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
 
-//# Draw line
-void st7735_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
-                     uint16_t color, M_Spi_Conf *config) {
-    // Bresenham's line algorithm
-    int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
-    int sx = (x0 < x1) ? 1 : -1;
-    int sy = (y0 < y1) ? 1 : -1;
-    int err = (dx > dy ? dx : -dy) / 2;
-    int e2;
-
-    uint16_t buffer_count = 0;
-    uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
-    memset(color_buffer, 0, sizeof(color_buffer));
-
-    // Track current position and window bounds
-    int16_t current_x = x0;
-    int16_t current_y = y0;
-    int16_t min_x = x0, max_x = x0;
-    int16_t min_y = y0, max_y = y0;
-
-    while (1) {
-        if (current_x == x1 && current_y == y1) break;
-        color_buffer[buffer_count++] = color;
-
-        // When buffer is full, send all pixels
-        if (buffer_count >= OUTPUT_BUFFER_SIZE) {
-            // Update window bounds
-            if (current_x < min_x) min_x = current_x;
-            if (current_x > max_x) max_x = current_x;
-            if (current_y < min_y) min_y = current_y;
-            if (current_y > max_y) max_y = current_y;
-
-            printf("window [%d, %d, %d, %d]\n", min_x, min_y, max_x, max_y);
-            for (int i = 0; i < buffer_count; i++) {
-                // print_hex_debug(color_buffer[i]);
-                if ((i+1) % dx == 0) printf(".\n");
-            }
-            printf("\n\n");
-
-            modTFT_setWindow(min_x, min_y, max_x, max_y, config);
-            send_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
-            
-            // Reset for next segment
-            buffer_count = 0;
-            min_x = current_x;
-            max_x = current_x;
-            min_y = current_y;
-            max_y = current_y;
-        }
-
-        e2 = err;
-        if (e2 > -dx) {
-            err -= dy;
-            current_x += sx;
-        }
-        if (e2 < dy) {
-            err += dx;
-            current_y += sy;
-        }
-    }
-
-    // Send remaining pixels
-    if (buffer_count > 0) {
-        printf("***window [%d, %d, %d, %d]\n", min_x, min_y, max_x, max_y);
-        printf("New dx segment (Y change):\n");
-        for (int i = 0; i < buffer_count; i++) {
-            // print_hex_debug(color_buffer[i]);
-            if ((i+1) % dx == 0) printf(".\n");
-        }
-        printf("\n\n");
-
-        modTFT_setWindow(min_x, min_y, max_x, max_y, config);
-        send_spi_data((uint8_t*)color_buffer, buffer_count * 2, config);
-    }
-}
-
 //# Draw horizontal line
-void st7735_draw_horLine(
+void modTFT_draw_horLine(
     int y, int x0, int x1, 
     uint16_t color, int thickness, 
     M_Spi_Conf *config
@@ -117,7 +40,7 @@ void st7735_draw_horLine(
 }
 
 //# Draw vertical line
-void st7735_draw_verLine(
+void modTFT_draw_verLine(
     int x, int y0, int y1,
     uint16_t color, int thickness,
     M_Spi_Conf *config
@@ -144,13 +67,140 @@ void st7735_draw_verLine(
     }
 }
 
+//# draw_line_bresenham
+static void draw_line_bresenham_slow(
+    int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+    uint16_t color, int16_t width, M_Spi_Conf *config
+) {
+    uint8_t steep = DIFF(y1, y0) > DIFF(x1, x0);
+    if (steep) {
+        SWAP_INT16(x0, y0);
+        SWAP_INT16(x1, y1);
+    }
+
+    if (x0 > x1) {
+        SWAP_INT16(x0, x1);
+        SWAP_INT16(y0, y1);
+    }
+
+    int16_t dx   = x1 - x0;
+    int16_t dy   = DIFF(y1, y0);
+    int16_t err  = dx >> 1;
+    int16_t step = (y0 < y1) ? 1 : -1;
+
+    for (; x0 <= x1; x0++) {
+        for (int16_t w = -(width / 2); w <= width / 2; w++) {
+            if (steep) {
+                modTFT_drawPixel(y0 + w, x0, color, config); // Draw perpendicular pixels for width
+            } else {
+                modTFT_drawPixel(x0, y0 + w, color, config); // Draw perpendicular pixels for width
+            }
+        }
+        
+        err -= dy;
+        if (err < 0) {
+            err += dx;
+            y0 += step;
+        }
+    }
+}
+
+void draw_line_bresenham(
+    int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+    uint16_t color, int16_t width, M_Spi_Conf *config)
+{
+    // Determine steepness and sort coordinates
+    uint8_t steep = abs(y1 - y0) > abs(x1 - x0);
+    if (steep) {
+        SWAP_INT16(x0, y0);
+        SWAP_INT16(x1, y1);
+    }
+    if (x0 > x1) {
+        SWAP_INT16(x0, x1);
+        SWAP_INT16(y0, y1);
+    }
+
+    // Precompute all invariants
+    const int16_t dx = x1 - x0;
+    const int16_t dy = abs(y1 - y0);
+    const int8_t ystep = (y0 < y1) ? 1 : -1;
+    const int16_t half_width = width >> 1;
+    const int16_t width_start = -half_width;
+    const int16_t width_end = half_width + (width & 1);
+    int16_t err = dx >> 1;
+
+    // Prepare pixel buffer for bulk writes
+    uint16_t pixel_buffer[16]; // Sized for common widths
+    for (int i = 0; i < sizeof(pixel_buffer)/sizeof(pixel_buffer[0]); i++) {
+        pixel_buffer[i] = color;
+    }
+
+    // Main drawing loop
+    while (x0 <= x1) {
+        // Calculate perpendicular coordinates
+        if (steep) {
+            const int16_t base_y = y0;
+            for (int16_t w = width_start; w <= width_end; w++) {
+                modTFT_drawPixel(base_y + w, x0, color, config);
+            }
+        } else {
+            const int16_t base_x = x0;
+            if (width == 1) {
+                // Fast path for single-pixel width
+                modTFT_drawPixel(base_x, y0, color, config);
+            } else {
+                // Bulk write optimization for common widths
+                if (width <= 16) {
+                    modTFT_setWindow(base_x, y0 + width_start, 
+                                    base_x, y0 + width_end, config);
+                    send_spi_data((uint8_t*)pixel_buffer, width * 2, config);
+                } else {
+                    // Fallback for large widths
+                    for (int16_t w = width_start; w <= width_end; w++) {
+                        modTFT_drawPixel(base_x, y0 + w, color, config);
+                    }
+                }
+            }
+        }
+
+        // Bresenham error calculation
+        err -= dy;
+        if (err < 0) {
+            err += dx;
+            y0 += ystep;
+        }
+        x0++;
+    }
+}
+
+void modTFT_draw_line(
+    int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+    int thickness, uint16_t color, M_Spi_Conf *config
+) {
+
+    // Handle horizontal lines (optimized path)
+    if (y0 == y1) {
+        modTFT_draw_horLine(y0, x0, x1, color, thickness, config);
+        return;
+    }
+    
+    // Handle vertical lines (optimized path)
+    if (x0 == x1) {
+        modTFT_draw_verLine(x0, y0, y1, color, thickness, config);
+        return;
+    }
+
+    draw_line_bresenham(x0, y0, x1, y1, color, thickness, config);
+}
+
+
 //# Draw Rectangle
 void st7735_draw_rectangle(
     uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, 
     uint16_t color, uint8_t thickness, M_Spi_Conf *config
 ) {
-    st7735_draw_horLine(y0, x0, x1, color, thickness, config);
-    st7735_draw_horLine(y1, x0, x1, color, thickness, config);
-    st7735_draw_verLine(x0, y0, y1, color, thickness, config);
-    st7735_draw_verLine(x1, y0, y1, color, thickness, config);
+    modTFT_draw_horLine(y0, x0, x1, color, thickness, config);
+    modTFT_draw_horLine(y1, x0, x1, color, thickness, config);
+    modTFT_draw_verLine(x0, y0, y1, color, thickness, config);
+    modTFT_draw_verLine(x1, y0, y1, color, thickness, config);
 }

@@ -20,16 +20,22 @@ M_Spi_Conf conf = {
 #define LINE_COLLOR RED
 
 void fill_screen() {
-    modTFT_fillRect(BLUE, ST7735_WIDTH, ST7735_HEIGHT, &conf);
+    modTFT_fillAll(BLUE, &conf);
 }
 
 void draw_horLine() {
-    st7735_draw_horLine(80, 10, 100, LINE_COLLOR, 3, &conf);
+    modTFT_draw_horLine(80, 10, 100, LINE_COLLOR, 3, &conf);
 }
 
 void draw_verLine() {
-    st7735_draw_verLine(80, 10, 100, LINE_COLLOR, 3, &conf);
+    modTFT_draw_verLine(80, 10, 100, LINE_COLLOR, 3, &conf);
 }
+
+
+void draw_line1() {
+    draw_line_bresenham(1, 1, 100, 100, WHITE, 5, &conf);
+}
+
 
 int main() {
     if(wiringXSetup("milkv_duo", NULL) == -1) {
@@ -43,10 +49,11 @@ int main() {
     }
 
     modTFT_init(&conf);
+    // modTFT_fillAll(BLUE, &conf); // Fill screen with black
 
     M_TFT_Text tft_text = {
         .x = 0, .y = 0,
-        .color = RED,
+        .color = WHITE,
         .page_wrap = 1,
         .word_wrap = 1,
 
@@ -66,13 +73,22 @@ int main() {
         // elapse = get_elapse_time_ms(fill_screen);
         // printf("fill_rect time: %llu us\n", elapse);       
 
-        elapse = get_elapse_time_ms(draw_horLine);
-        printf("hor_line time: %llu us\n", elapse);       
+        // elapse = get_elapse_time_ms(draw_horLine);
+        // printf("hor_line time: %llu us\n", elapse);       
 
-        elapse = get_elapse_time_ms(draw_verLine);
-        printf("ver_line timez: %llu us\n", elapse);
+        // elapse = get_elapse_time_ms(draw_verLine);
+        // printf("ver_line time: %llu us\n", elapse);
 
-        printf("zzzzzzzzzzzzzz\n");
+        // elapse = get_elapse_time_ms(test_draw2);
+        // printf("test_draw2 time: %llu us\n", elapse);
+
+        // elapse = get_elapse_time_ms(test_draw1);
+        // printf("test_draw1 time: %llu us\n", elapse);
+
+        elapse = get_elapse_time_ms(draw_line1);
+        printf("draw_line1 time: %llu us\n", elapse);
+
+        printf("zzzzzz\n");
         digitalWrite(conf.CS, HIGH);
         delayMicroseconds(400E3);
 
