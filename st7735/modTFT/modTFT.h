@@ -41,20 +41,20 @@ typedef struct {
     int8_t RST;         // set to -1 when not use
 } M_Spi_Conf;
 
-static void send_spi_cmd(uint8_t cmd, M_Spi_Conf *conf) {
+static void spi_send_cmd(uint8_t cmd, M_Spi_Conf *conf) {
     digitalWrite(conf->DC, 0);      // Command mode
     wiringXSPIDataRW(conf->HOST, &cmd, 1);
 }
 
-int send_spi_data(uint8_t *data, int len, M_Spi_Conf *conf) {
+int spi_send_data(uint8_t *data, int len, M_Spi_Conf *conf) {
     digitalWrite(conf->DC, 1);      // Data mode
     wiringXSPIDataRW(conf->HOST, data, len);
     return 1;
 }
 
 int spi_send_cmdData(uint8_t cmd, uint8_t *data, int len, M_Spi_Conf *conf) {
-    send_spi_cmd(cmd, conf);
-    send_spi_data(data, len, conf);
+    spi_send_cmd(cmd, conf);
+    spi_send_data(data, len, conf);
     return 1;
 }
 
@@ -73,7 +73,7 @@ void modTFT_setWindow(
     spi_send_cmdData(0x2B, data, 4, conf);
 
     //! Memory Write: RAMWR
-    send_spi_cmd(0x2C, conf);        // Memory Write
+    spi_send_cmd(0x2C, conf);        // Memory Write
 }
 
 void modTFT_drawPixel(
@@ -88,7 +88,7 @@ void modTFT_drawPixel(
 
     // print_hex(data, sizeof(data));
 
-    send_spi_data(data, sizeof(data), conf);
+    spi_send_data(data, sizeof(data), conf);
 }
 
 void modTFT_fillRect(
@@ -122,7 +122,7 @@ void modTFT_fillRect(
         }
 
         //! Send the chunk to the display
-        send_spi_data(chunk, pixels_in_chunk * 2, conf);
+        spi_send_data(chunk, pixels_in_chunk * 2, conf);
 
         //! Update the number of pixels sent
         pixels_sent += pixels_in_chunk;
@@ -154,16 +154,16 @@ void modTFT_init(M_Spi_Conf *conf) {
     digitalWrite(conf->CS, 0);
 
     //! initializeation commands
-    send_spi_cmd(0x01, conf);           // Software reset
-    send_spi_cmd(0x11, conf);           // Sleep out
+    spi_send_cmd(0x01, conf);           // Software reset
+    spi_send_cmd(0x11, conf);           // Sleep out
     
     // Set color mode: 16-bit color (RGB565)
     spi_send_cmdData(0x3A, (uint8_t[]){0x05}, 1, conf);
 
-    send_spi_cmd(0x20, conf); // Inversion off
+    spi_send_cmd(0x20, conf); // Inversion off
     // send_spi_cmd(0x21, conf); // Inversion on
     
-    send_spi_cmd(0x29, conf); // Display on
+    spi_send_cmd(0x29, conf); // Display on
 
     //# Release CS
     digitalWrite(conf->CS, 1);
@@ -296,7 +296,7 @@ static void send_text_buffer(M_TFT_Text *model, M_Spi_Conf *config) {
 
     //! Send the buffer to the display    
     modTFT_setWindow(render_state.x0, render_state.current_y, x1, y1, config);
-    send_spi_data((uint8_t *)frame_buff, buff_len * 2, config); // Multiply by 2 for uint16_t size
+    spi_send_data((uint8_t *)frame_buff, buff_len * 2, config); // Multiply by 2 for uint16_t size
 
     // Reset the accumulated character count and update render_start_x
     render_state.char_count = 0;

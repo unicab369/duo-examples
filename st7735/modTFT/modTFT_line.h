@@ -14,7 +14,7 @@
 uint16_t color_buffer[OUTPUT_BUFFER_SIZE];
 
 //# Draw horizontal line
-void modTFT_draw_horLine(
+void modTFT_drawHorLine(
     int y, int x0, int x1, 
     uint16_t color, int thickness, M_Spi_Conf *config
 ) {
@@ -39,7 +39,7 @@ void modTFT_draw_horLine(
 
         //# Set window & send data
         modTFT_setWindow(x, y, x + width - 1, y + thickness - 1, config);
-        send_spi_data((uint8_t*)chunk_buffer, chunk_bytes, config);
+        spi_send_data((uint8_t*)chunk_buffer, chunk_bytes, config);
     }
 
     //! Set CS
@@ -47,7 +47,7 @@ void modTFT_draw_horLine(
 }
 
 //# Draw vertical line
-void modTFT_draw_verLine(
+void modTFT_drawVerLine(
     int x, int y0, int y1,
     uint16_t color, int thickness, M_Spi_Conf *config
 ) {
@@ -72,7 +72,7 @@ void modTFT_draw_verLine(
         
         //# Set window & send data
         modTFT_setWindow(x, y, x + thickness - 1, y + height - 1, config);
-        send_spi_data((uint8_t*)chunk_buffer, chunk_bytes, config);
+        spi_send_data((uint8_t*)chunk_buffer, chunk_bytes, config);
     }
 
     //! Set CS
@@ -125,8 +125,8 @@ static void draw_line_bresenham_slow(
 
 void draw_line_bresenham(
     int x0, int y0, int x1, int y1,
-    uint16_t color, int width, M_Spi_Conf *config)
-{
+    uint16_t color, int thickness, M_Spi_Conf *config
+) {
     // Determine steepness and sort coordinates
     int steep = abs(y1 - y0) > abs(x1 - x0);
     if (steep) {
@@ -139,9 +139,9 @@ void draw_line_bresenham(
     }
 
     // Precompute all invariants
-    const int half_width = width >> 1;
+    const int half_width = thickness >> 1;
     const int width_start = -half_width;
-    const int width_end = half_width + (width & 1);
+    const int width_end = half_width + (thickness & 1);
 
     const int dy = abs(y1 - y0);
     const int dx = x1 - x0;
@@ -170,14 +170,14 @@ void draw_line_bresenham(
             }
         } else {
             const int base_x = x0;
-            if (width == 1) {
+            if (thickness == 1) {
                 // Fast path for single-pixel width
                 modTFT_drawPixel(base_x, y0, color, config);
             } else {
                 // Bulk write optimization for common widths
-                if (width <= 16) {
+                if (thickness <= 16) {
                     modTFT_setWindow(base_x, y0 + width_start, base_x, y0 + width_end, config);
-                    send_spi_data((uint8_t*)pixel_buffer, width * 2, config);
+                    spi_send_data((uint8_t*)pixel_buffer, thickness * 2, config);
                 } else {
                     // Fallback for large widths
                     for (int w = width_start; w <= width_end; w++) {
@@ -200,19 +200,19 @@ void draw_line_bresenham(
     digitalWrite(config->CS, 1);
 }
 
-void modTFT_draw_line(
-    int16_t x0, int16_t y0, int16_t x1, int16_t y1,
-    int thickness, uint16_t color, M_Spi_Conf *config
+void modTFT_drawLine(
+    int x0, int y0, int x1, int y1,
+    uint16_t color, int thickness, M_Spi_Conf *config
 ) {
     //! Handle horizontal lines (optimized path)
     if (y0 == y1) {
-        modTFT_draw_horLine(y0, x0, x1, color, thickness, config);
+        modTFT_drawHorLine(y0, x0, x1, color, thickness, config);
         return;
     }
     
     //! Handle vertical lines (optimized path)
     if (x0 == x1) {
-        modTFT_draw_verLine(x0, y0, y1, color, thickness, config);
+        modTFT_drawVerLine(x0, y0, y1, color, thickness, config);
         return;
     }
 
