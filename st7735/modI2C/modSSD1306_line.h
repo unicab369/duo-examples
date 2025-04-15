@@ -164,7 +164,6 @@ static int compute_bresenhamLine(int x0, int y0, int x1, int y1) {
     return 1;
 }
 
-
 //! compute_line: Generalized line drawing function
 //# TODO: Issue with line thickness
 int compute_line(int x0, int y0, int x1, int y1, int thickness) {
@@ -190,8 +189,8 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     }
     
     // Calculate direction and perpendicular vectors
-    int dx = x1 - x0;
-    int dy = y1 - y0;
+    int dx = x1 - x0;   //! always positive
+    int dy = y1 - y0;   //! always positive
     int px = -dy;
     int py = dx;
 
@@ -220,7 +219,7 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     for (int y = min_y; y <= max_y; y++) {
         M_Page_Mask mask = page_masks[y];
         uint8_t* row = &frame_buffer[mask.page][0];
-        int x_min = SSD1306_W, x_max = 0;
+        int x_min = SSD1306_WIDTH_MASK, x_max = 0;
 
         // Find intersections with all edges
         for (int i = 0; i < 4; i++) {
@@ -250,6 +249,28 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     return 1;
 }
 
+
+//! compute_fastHorLine
+static int compute_fastHorLine(int y, int x0, int x1, int color) {
+    if (y >= SSD1306_H) return -1;
+    
+	// Clamp x-coordinates - branchless operation
+    x0 = MIN(x0, SSD1306_WIDTH_MASK);
+    x1 = MIN(x1, SSD1306_WIDTH_MASK);
+
+    M_Page_Mask mask = page_masks[y];
+
+    for (int x = x0; x <= x1; x++) {
+        if (color) {
+            frame_buffer[mask.page][x] |= mask.bitmask;  // Set pixel (foreground)
+        } else {
+            frame_buffer[mask.page][x] &= ~mask.bitmask; // Clear pixel (background)
+        }
+    }
+
+    return 1;
+}
+
 //! compute_rect
 int compute_rect(int x0, int y0, int x1, int y1, int thickness) {
     // Draw top and bottom lines
@@ -266,20 +287,20 @@ int compute_rect(int x0, int y0, int x1, int y1, int thickness) {
 //! compute_filledRect
 int compute_filledRect(int x0, int y0, int x1, int y1) {
     // Validate and order coordinates
-    if (x0 > x1) { int tmp = x0; x0 = x1; x1 = tmp; }
-    if (y0 > y1) { int tmp = y0; y0 = y1; y1 = tmp; }
-    
+    int x_min = MIN(x0, x1);
+    int x_max = MAX(x0, x1);
+    int y_min = MIN(y0, y1);
+    int y_max = MAX(y0, y1);
+
     // Clamp coordinates to display boundaries
-    x0 = (x0 < 0) ? 0 : (x0 >= SSD1306_W) ? SSD1306_W - 1 : x0;
-    x1 = (x1 < 0) ? 0 : (x1 >= SSD1306_W) ? SSD1306_W - 1 : x1;
-    y0 = (y0 < 0) ? 0 : (y0 >= SSD1306_H) ? SSD1306_H - 1 : y0;
-    y1 = (y1 < 0) ? 0 : (y1 >= SSD1306_H) ? SSD1306_H - 1 : y1;
+    x_min = CLAMP(x_min, 0, SSD1306_WIDTH_MASK);
+    x_max = CLAMP(x_max, 0, SSD1306_WIDTH_MASK);
+    y_min = CLAMP(y_min, 0, SSD1306_HEIGHT_MASK);
+    y_max = CLAMP(y_max, 0, SSD1306_HEIGHT_MASK);
     
     // Draw filled rectangle using horizontal lines
-    for (int y = y0; y <= y1; y++) {
-        if (compute_horLine(y, x0, x1, 1, 1) < 0) {  // thickness=1, color=1 (foreground)
-            return -1;  // Error code if horizontal line fails
-        }
+    for (int y = y_min; y <= y_max; y++) {
+        if (compute_fastHorLine(y, x_min, x_max, 1) < 0) return -1;
     }
     
     return 1;  // Success
@@ -312,7 +333,8 @@ static int compute_circleLine(
 	int x0, int y0, int radius
 ) {
 	// Validate center coordinates
-	if (x0 >= SSD1306_W || y0 >= SSD1306_H) return -1;
+	if (x0 >= SSD1306_WIDTH_MASK + radius ||
+        y0 >= SSD1306_HEIGHT_MASK + radius || radius < 1) return -1;
 
     int x = -radius;
     int y = 0;
@@ -353,31 +375,13 @@ static int compute_circleLine(
     return 1;
 }
 
-//! compute_fastHorLine
-static void compute_fastHorLine(int y, int x0, int x1, int color) {
-    if (y >= SSD1306_H) return;
-    
-	// Clamp x-coordinates - branchless operation
-    x0 = (x0 >= SSD1306_W) ? SSD1306_WIDTH_MASK : x0;
-    x1 = (x1 >= SSD1306_W) ? SSD1306_WIDTH_MASK : x1;
-
-    M_Page_Mask mask = page_masks[y];
-
-    for (int x = x0; x <= x1; x++) {
-        if (color) {
-            frame_buffer[mask.page][x] |= mask.bitmask;  // Set pixel (foreground)
-        } else {
-            frame_buffer[mask.page][x] &= ~mask.bitmask; // Clear pixel (background)
-        }
-    }
-}
-
 //! compute_filledCircle
 void compute_filledCircle(
     int x0, int y0, int radius, int color
 ) {
 	// Validate center coordinates
-	if (x0 >= SSD1306_W || y0 >= SSD1306_H) return;
+	if (x0 >= SSD1306_WIDTH_MASK + radius ||
+        y0 >= SSD1306_HEIGHT_MASK + radius || radius < 1) return;
 
     int x = -radius;
     int y = 0;
@@ -439,6 +443,10 @@ void test_rect() {
     compute_rect(20, 20, 40, 40, 2);
 }
 
+void test_fillRect() {
+    compute_filledRect(50, 50, 65, 65);
+}
+
 void shift_value(int shift, int *input, int len) {
     for(int i=0; i<len; i++) {
         input[i] += shift;
@@ -475,6 +483,8 @@ void test_prefillLines(int print_log) {
     print_elapse_nanoSec("test_diagLine", test_diagLine, print_log);
 
     print_elapse_nanoSec("test_rect", test_rect, print_log);
+
+    print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
 
     print_elapse_nanoSec("test_hexagon", test_hexagon, print_log);
 
