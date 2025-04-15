@@ -26,6 +26,10 @@ void test_verLine() {
     prefill_verLine(10, 0, SSD1306_H, 3, 0);
 }
 
+void test_bLine() {
+    prefill_line(0, 0, SSD1306_H, SSD1306_H, 3);
+}
+
 void modI2C_task(int print_log) {
     uint64_t elapse;
 
@@ -37,6 +41,9 @@ void modI2C_task(int print_log) {
 
     elapse = get_elapse_nanoSec(test_verLine);
     if (print_log) printf("test_verLine:\t\t %llu ns\n", elapse);
+
+    elapse = get_elapse_nanoSec(test_bLine);
+    if (print_log) printf("test_bLine:\t\t %llu ns\n", elapse);
 
     elapse = get_elapse_microSec(ssd1306_renderFrame);
     if (print_log) printf("ssd1306_renderFrame:\t %llu us\n", elapse);

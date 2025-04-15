@@ -4,7 +4,9 @@
 #define MIN(a, b)           ((a < b) ? a : b)
 #define MAX(a, b)           ((a > b) ? a : b)
 #define DIFF(a, b)          ((a > b) ? a - b : b - a)
+
 #define SWAP_INT(a, b)    { int temp = a; a = b; b = temp; }
+#define CLAMP(val, min, max) ((val < min) ? min : (val > max) ? max : val)
 
 static uint64_t elapse_ns(struct timespec *start) {
     struct timespec end;

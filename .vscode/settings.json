@@ -23,7 +23,11 @@
         "modtft_shape.h": "c",
         "modssd1306.h": "c",
         "st7735.h": "c",
-        "modi2c.h": "c"
+        "modi2c.h": "c",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "cstdlib": "cpp",
+        "chrono": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

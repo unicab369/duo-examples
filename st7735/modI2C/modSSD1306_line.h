@@ -83,3 +83,92 @@ void prefill_verLine(
         }
     }
 }
+
+
+
+// void prefill_poly(M_Point *pts, uint8_t num_pts, uint8_t thickness) {
+//     if (num_pts < 3) return;  // Need at least 3 points for a polygon
+//     prefill_lines(pts, num_pts, thickness);
+//     prefill_line(pts[num_pts-1], pts[0], thickness);
+// }
+
+
+
+
+void prefill_line(int x0, int y0, int x1, int y1, int thickness) {
+    // Calculate perpendicular vector (for thickness direction)
+    int px = y0 - y1;
+    int py = x1 - x0;
+    
+    // Normalize perpendicular vector
+    int length = sqrt(px*px + py*py);
+    if (length == 0) return;  // Zero-length line
+    
+    // Scale to half-thickness
+    px = (px * thickness) / (2 * length);
+    py = (py * thickness) / (2 * length);
+    
+    // Calculate the 4 corners of the thick line
+    int x[4] = {x0 + px, x0 - px, x1 - px, x1 + px};
+    int y[4] = {y0 + py, y0 - py, y1 - py, y1 + py};
+    
+    // Find bounding box
+    int min_x = MIN(MIN(x[0], x[1]), MIN(x[2], x[3]));
+    int max_x = MAX(MAX(x[0], x[1]), MAX(x[2], x[3]));
+    int min_y = MIN(MIN(y[0], y[1]), MIN(y[2], y[3]));
+    int max_y = MAX(MAX(y[0], y[1]), MAX(y[2], y[3]));
+    
+    // Clamp to display
+    min_x = CLAMP(min_x, 0, SSD1306_W-1);
+    max_x = CLAMP(max_x, 0, SSD1306_W-1);
+    min_y = CLAMP(min_y, 0, SSD1306_H-1);
+    max_y = CLAMP(max_y, 0, SSD1306_H-1);
+    
+    // Scanline fill the polygon
+    for (int y_pos = min_y; y_pos <= max_y; y_pos++) {
+        M_Page_Mask mask = page_masks[y_pos];
+        uint8_t* row = &frame_buffer[mask.page][0];
+        
+        // Find intersections with edges
+        int intersections[4];
+        int count = 0;
+        
+        for (int i = 0; i < 4; i++) {
+            int j = (i + 1) % 4;
+            if ((y[i] > y_pos && y[j] > y_pos) || 
+                (y[i] < y_pos && y[j] < y_pos)) continue;
+                
+            if (y[i] == y[j]) {  // Horizontal edge
+                intersections[count++] = x[i];
+                intersections[count++] = x[j];
+            } else {
+                int x_intersect = x[i] + (y_pos - y[i]) * (x[j] - x[i]) / (y[j] - y[i]);
+                intersections[count++] = x_intersect;
+            }
+        }
+        
+        // Sort intersections and draw spans
+        if (count >= 2) {
+            // Simple bubble sort for small count
+            for (int i = 0; i < count-1; i++) {
+                for (int j = i+1; j < count; j++) {
+                    if (intersections[i] > intersections[j]) {
+                        int tmp = intersections[i];
+                        intersections[i] = intersections[j];
+                        intersections[j] = tmp;
+                    }
+                }
+            }
+            
+            // Draw between pairs of intersections
+            for (int i = 0; i < count; i += 2) {
+                int start = CLAMP(intersections[i], 0, SSD1306_W-1);
+                int end = CLAMP(intersections[i+1], 0, SSD1306_W-1);
+                
+                for (int x_pos = start; x_pos <= end; x_pos++) {
+                    row[x_pos] |= mask.bitmask;
+                }
+            }
+        }
+    }
+}
