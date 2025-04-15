@@ -1,11 +1,13 @@
-#define SSD1306_W 128
-#define SSD1306_H 64
+#include <wiringx.h>
 
-#define SSD1306_PAGES       (SSD1306_H / 8) // 8 pages for 64 rows
+#define SSD1306_WIDTH 128
+#define SSD1306_HEIGHT 64
+
+#define SSD1306_PAGES       (SSD1306_HEIGHT / 8) // 8 pages for 64 rows
 // #define SSD1306_PAGES       1 // 8 pages for 64 rows
 
-#define SSD1306_WIDTH_MASK	SSD1306_W - 1
-#define SSD1306_HEIGHT_MASK	SSD1306_H - 1
+#define SSD1306_WIDTH_MASK	SSD1306_WIDTH - 1
+#define SSD1306_HEIGHT_MASK	SSD1306_HEIGHT - 1
 
 
 int fd_i2c;
@@ -94,12 +96,12 @@ typedef struct {
 	uint8_t bitmask;
 } M_Page_Mask;
 
-M_Page_Mask page_masks[SSD1306_H];
+M_Page_Mask page_masks[SSD1306_HEIGHT];
 
-uint8_t frame_buffer[SSD1306_PAGES][SSD1306_W] = { 0 };
+uint8_t frame_buffer[SSD1306_PAGES][SSD1306_WIDTH] = { 0 };
 
 void precompute_page_masks() {
-	for (uint8_t y = 0; y < SSD1306_H; y++) {
+	for (uint8_t y = 0; y < SSD1306_HEIGHT; y++) {
 		page_masks[y].page       = y >> 3;             // (y / 8)
 		page_masks[y].bitmask    = 1 << (y & 0x07);    // (y % 8)
 	}
@@ -120,7 +122,7 @@ void ssd1306_renderArea(
 
 //! render the entire screen
 void ssd1306_renderFrame() {
-	ssd1306_renderArea(0, 7, 0, SSD1306_W);
+	ssd1306_renderArea(0, 7, 0, SSD1306_WIDTH);
 }
 
 void modSSD1306_clearScreen(uint8_t color) {

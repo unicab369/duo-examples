@@ -2,7 +2,7 @@
 
 //! compute_pixel
 void compute_pixel(int x, int y) {
-    if (x >= SSD1306_W || y >= SSD1306_H) return; // Skip if out of bounds
+    if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return; // Skip if out of bounds
     M_Page_Mask mask = page_masks[y];
     frame_buffer[mask.page][x] |= mask.bitmask;
 }
@@ -13,7 +13,7 @@ int compute_horLine(
     int thickness, int mirror
 ) {
     // Validate coordinates
-    if (y >= SSD1306_H || thickness < 1) return -1;
+    if (y >= SSD1306_HEIGHT || thickness < 1) return -1;
 
 	// Clamp to display bounds - branchless operation
     x0 = MIN(x0, SSD1306_WIDTH_MASK);
@@ -53,7 +53,7 @@ int compute_verLine(
     int thickness, int mirror
 ) {
     // Validate coordinates
-    if (x >= SSD1306_W || thickness < 1) return -1;
+    if (x >= SSD1306_WIDTH || thickness < 1) return -1;
 
 	// Clamp to display bounds - branchless operation
     y0 = MIN(y0, SSD1306_HEIGHT_MASK);
@@ -252,7 +252,7 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
 
 //! compute_fastHorLine
 static int compute_fastHorLine(int y, int x0, int x1, int color) {
-    if (y >= SSD1306_H) return -1;
+    if (y >= SSD1306_HEIGHT) return -1;
     
 	// Clamp x-coordinates - branchless operation
     x0 = MIN(x0, SSD1306_WIDTH_MASK);
@@ -423,20 +423,35 @@ int compute_circle(int x0, int y0, int radius, int thickness) {
     return 1;
 }
 
+//! compute_str_atLine
+void compute_str_atLine(uint8_t page, uint8_t column, const char *str) {
+    uint8_t current_column = column;
+    
+    while (*str && current_column < SSD1306_WIDTH - 6) { // Leave space for 5 pixel width + 1 pixel spacing
+        uint8_t char_index = *str - 32; // Adjust for ASCII offset
+
+        // Copy font data to frame buffer
+        memcpy(&frame_buffer[page][current_column], &FONT_7x5[char_index], 5);
+        
+        current_column += 6; // Move to the next character position (5 pixels + 1 spacing)
+        str++;
+    }
+}
+
 void test_clearScreen1() {
     modSSD1306_clearScreen(0xFF);
 }
 
 void test_horLine() {
-    compute_horLine(10, 0, SSD1306_W, 3, 0);
+    compute_horLine(10, 0, SSD1306_WIDTH, 3, 0);
 }
 
 void test_verLine() {
-    compute_verLine(10, 0, SSD1306_H, 3, 0);
+    compute_verLine(10, 0, SSD1306_HEIGHT, 3, 0);
 }
 
 void test_diagLine() {
-    compute_line(0, 0, SSD1306_H, SSD1306_H, 1);
+    compute_line(0, 0, SSD1306_HEIGHT, SSD1306_HEIGHT, 1);
 }
 
 void test_rect() {
@@ -471,6 +486,16 @@ void test_filledCircle() {
     compute_filledCircle(60, 40, 10, 1);
 }
 
+void test_drawString() {
+    ssd1306_push_string(0, 0, "Hello MilkV Duozzz!", 8);
+    // ssd1306_push_string(0, 1, "Hello MilkV Duozzz!", 16);
+}
+
+void test_string() {
+    // ssd1306_drawstr(0, 0, "Hello MilkV Duozzz!", 1);
+    compute_str_atLine(0, 0, "Hello MilkV Duozzz!");
+}
+
 void test_prefillLines(int print_log) {
     uint64_t elapse;
 
@@ -492,9 +517,13 @@ void test_prefillLines(int print_log) {
 
     print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
 
+    // print_elapse_nanoSec("test_drawStr", test_drawString, print_log);
+
+    print_elapse_nanoSec("test_string", test_string, print_log);
+
     print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
     
-    delayMicroseconds(1000E3);
+    delayMicroseconds(1500E3);
     modSSD1306_clearScreen(0x00);
 
     printf("\n");

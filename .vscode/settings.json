@@ -27,7 +27,8 @@
         "cmath": "cpp",
         "complex": "cpp",
         "cstdlib": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "modssd1306_draw.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
