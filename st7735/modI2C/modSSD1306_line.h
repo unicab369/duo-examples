@@ -13,28 +13,25 @@ int compute_horLine(
     int thickness, int mirror
 ) {
     // Validate coordinates
-    if (y >= SSD1306_H) return -1;
+    if (y >= SSD1306_H || thickness < 1) return -1;
 
 	// Clamp to display bounds - branchless operation
-    x0 = (x0 >= SSD1306_W) ? SSD1306_W_MASK : x0;
-    x1 = (x1 >= SSD1306_W) ? SSD1306_W_MASK : x1;
+    x0 = MIN(x0, SSD1306_WIDTH_MASK);
+    x1 = MIN(x1, SSD1306_WIDTH_MASK);
     
-	// Handle mirroring
-	if (mirror) {
-		x0 = SSD1306_W_MASK - x0;
-		x1 = SSD1306_W_MASK - x1;
-	}
+	// Ensure x1 <= x2 - branchless operation
+    x0 = MIN(x0, x1);
+    x1 = MAX(x0, x1);
 
-	// Ensure x1 <= x2 (swap if needed) - branchless operation
-    int x_min = x0 < x1 ? x0 : x1;
-    int x_max = x0 < x1 ? x1 : x0;
-    x0 = x_min;
-    x1 = x_max;
+    // Handle mirroring
+	if (mirror) {
+		x0 = SSD1306_WIDTH_MASK - x0;
+		x1 = SSD1306_WIDTH_MASK - x1;
+	}
 
     // calculte y_end - branchless operation
     int y_end  = y + thickness - 1;
-    y_end = (y_end >= SSD1306_H) ? SSD1306_H : y_end;
-	if (y_end < y) return -1;  // Skip if thickness causes overflow
+    y_end = MIN(y_end, SSD1306_HEIGHT_MASK);
 
     // Draw thick line
     for (int y_pos = y; y_pos <= y_end ; y_pos++) {
@@ -56,28 +53,25 @@ int compute_verLine(
     int thickness, int mirror
 ) {
     // Validate coordinates
-    if (x >= SSD1306_W) return -1;
+    if (x >= SSD1306_W || thickness < 1) return -1;
 
 	// Clamp to display bounds - branchless operation
-    y0 = (y0 >= SSD1306_H) ? SSD1306_H_MASK : y0;
-    y1 = (y1 >= SSD1306_H) ? SSD1306_H_MASK : y1;
+    y0 = MIN(y0, SSD1306_HEIGHT_MASK);
+    y1 = MIN(y1, SSD1306_HEIGHT_MASK);
+
+    // Ensure y1 <= y2 - branchless operation
+    y0 = MIN(y0, y1);
+    y1 = MAX(y0, y1);
 
 	// Handle mirroring
 	if (mirror) {
-		y0 = SSD1306_H_MASK - y0;
-		y1 = SSD1306_H_MASK - y1;
+		y0 = SSD1306_HEIGHT_MASK - y0;
+		y1 = SSD1306_HEIGHT_MASK - y1;
 	}
-
-	// Ensure y1 <= y2 (swap if needed) - branchless operation
-    int y_min = y0 < y1 ? y0 : y1;
-    int y_max = y0 < y1 ? y1 : y0;
-    y0 = y_min;
-    y1 = y_max;
 
     // calculte x_end - branchless operation
     int x_end = x + thickness - 1;
-    x_end = (x_end >= SSD1306_W) ? SSD1306_W_MASK : x_end;
-	if (x_end < x) return -1;  // Skip if thickness causes overflow
+    x_end = MIN(x_end, SSD1306_WIDTH_MASK);
 
     // Draw vertical line with thickness
     for (int y_pos = y0; y_pos <= y1; y_pos++) {
@@ -97,10 +91,10 @@ int compute_verLine(
 //! compute_diagLine
 static int compute_diagLine(int x0, int y0, int x1, int y1) {
     // Clamp coordinates
-    x0 = CLAMP(x0, 0, SSD1306_W-1);
-    y0 = CLAMP(y0, 0, SSD1306_H-1);
-    x1 = CLAMP(x1, 0, SSD1306_W-1);
-    y1 = CLAMP(y1, 0, SSD1306_H-1);
+    x0 = CLAMP(x0, 0, SSD1306_WIDTH_MASK);
+    y0 = CLAMP(y0, 0, SSD1306_HEIGHT_MASK);
+    x1 = CLAMP(x1, 0, SSD1306_WIDTH_MASK);
+    y1 = CLAMP(y1, 0, SSD1306_HEIGHT_MASK);
 
     // Use linear interpolation for perfect straightness
     int dx = x1 - x0;
@@ -124,7 +118,7 @@ static int compute_diagLine(int x0, int y0, int x1, int y1) {
         int px = x >> 16;
         int py = y >> 16;
         
-        if (px >= 0 && px < SSD1306_W && py >= 0 && py < SSD1306_H) {
+        if (px >= 0 && px < SSD1306_WIDTH_MASK && py >= 0 && py < SSD1306_HEIGHT_MASK) {
             M_Page_Mask mask = page_masks[py];
             frame_buffer[mask.page][px] |= mask.bitmask;
         }
@@ -139,10 +133,10 @@ static int compute_diagLine(int x0, int y0, int x1, int y1) {
 //! Bresenham's line can create a bent-looking line
 static int compute_bresenhamLine(int x0, int y0, int x1, int y1) {
     // Clamp coordinates to display bounds
-    x0 = CLAMP(x0, 0, SSD1306_W-1);
-    y0 = CLAMP(y0, 0, SSD1306_H-1);
-    x1 = CLAMP(x1, 0, SSD1306_W-1);
-    y1 = CLAMP(y1, 0, SSD1306_H-1);
+    x0 = CLAMP(x0, 0, SSD1306_WIDTH_MASK);
+    y0 = CLAMP(y0, 0, SSD1306_HEIGHT_MASK);
+    x1 = CLAMP(x1, 0, SSD1306_WIDTH_MASK);
+    y1 = CLAMP(y1, 0, SSD1306_HEIGHT_MASK);
 
     // Bresenham's algorithm setup
     int dx = abs(x1 - x0);
@@ -154,27 +148,17 @@ static int compute_bresenhamLine(int x0, int y0, int x1, int y1) {
 
     while (1) {
         // Set pixel if within bounds
-        if (x0 >= 0 && x0 < SSD1306_W && y0 >= 0 && y0 < SSD1306_H) {
+        if (x0 >= 0 && x0 < SSD1306_WIDTH_MASK && y0 >= 0 && y0 < SSD1306_HEIGHT_MASK) {
             M_Page_Mask mask = page_masks[y0];
             frame_buffer[mask.page][x0] |= mask.bitmask;
         }
 
         // Check for end of line
         if (x0 == x1 && y0 == y1) break;
-        
+
         e2 = 2 * err;
-        
-        // X-axis step
-        if (e2 >= dy) {
-            err += dy;
-            x0 += sx;
-        }
-        
-        // Y-axis step
-        if (e2 <= dx) {
-            err += dx;
-            y0 += sy;
-        }
+        if (e2 >= dy) err += dy; x0 += sx;      // X-axis step
+        if (e2 <= dx) err += dx; y0 += sy;      // Y-axis step
     }
 
     return 1;
@@ -185,7 +169,7 @@ static int compute_bresenhamLine(int x0, int y0, int x1, int y1) {
 //# TODO: Issue with line thickness
 int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     // Handle single point case
-    if (x0 == x1 && y0 == y1) return -1;
+    if (x0 == x1 && y0 == y1 || thickness < 1) return -1;
 
     //! handle vertical line
     if (x0 == x1) {
@@ -200,7 +184,7 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     }
 
     //! handle single pixel thickness line
-    if (thickness <= 1) {
+    if (thickness == 1) {
         compute_diagLine(x0, y0, x1, y1);
         return -1;
     }
@@ -227,10 +211,10 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
     int min_y = MIN(MIN(edges_y[0], edges_y[1]), MIN(edges_y[2], edges_y[3]));
     int max_y = MAX(MAX(edges_y[0], edges_y[1]), MAX(edges_y[2], edges_y[3]));
 
-    min_x = CLAMP(min_x, 0, SSD1306_W_MASK);
-    max_x = CLAMP(max_x, min_x, SSD1306_W_MASK);
-    min_y = CLAMP(min_y, 0, SSD1306_H_MASK);
-    max_y = CLAMP(max_y, min_y, SSD1306_H_MASK);
+    min_x = CLAMP(min_x, 0      , SSD1306_WIDTH_MASK);
+    max_x = CLAMP(max_x, min_x  , SSD1306_WIDTH_MASK);
+    min_y = CLAMP(min_y, 0      , SSD1306_HEIGHT_MASK);
+    max_y = CLAMP(max_y, min_y  , SSD1306_HEIGHT_MASK);
 
     // Scanline fill
     for (int y = min_y; y <= max_y; y++) {
@@ -277,6 +261,28 @@ int compute_rect(int x0, int y0, int x1, int y1, int thickness) {
     if (compute_verLine(x1, y0, y1, thickness, 0) < 0) return -4;
 
     return 1;
+}
+
+//! compute_filledRect
+int compute_filledRect(int x0, int y0, int x1, int y1) {
+    // Validate and order coordinates
+    if (x0 > x1) { int tmp = x0; x0 = x1; x1 = tmp; }
+    if (y0 > y1) { int tmp = y0; y0 = y1; y1 = tmp; }
+    
+    // Clamp coordinates to display boundaries
+    x0 = (x0 < 0) ? 0 : (x0 >= SSD1306_W) ? SSD1306_W - 1 : x0;
+    x1 = (x1 < 0) ? 0 : (x1 >= SSD1306_W) ? SSD1306_W - 1 : x1;
+    y0 = (y0 < 0) ? 0 : (y0 >= SSD1306_H) ? SSD1306_H - 1 : y0;
+    y1 = (y1 < 0) ? 0 : (y1 >= SSD1306_H) ? SSD1306_H - 1 : y1;
+    
+    // Draw filled rectangle using horizontal lines
+    for (int y = y0; y <= y1; y++) {
+        if (compute_horLine(y, x0, x1, 1, 1) < 0) {  // thickness=1, color=1 (foreground)
+            return -1;  // Error code if horizontal line fails
+        }
+    }
+    
+    return 1;  // Success
 }
 
 //! compute_multiLines
@@ -352,8 +358,8 @@ static void compute_fastHorLine(int y, int x0, int x1, int color) {
     if (y >= SSD1306_H) return;
     
 	// Clamp x-coordinates - branchless operation
-    x0 = (x0 >= SSD1306_W) ? SSD1306_W_MASK : x0;
-    x1 = (x1 >= SSD1306_W) ? SSD1306_W_MASK : x1;
+    x0 = (x0 >= SSD1306_W) ? SSD1306_WIDTH_MASK : x0;
+    x1 = (x1 >= SSD1306_W) ? SSD1306_WIDTH_MASK : x1;
 
     M_Page_Mask mask = page_masks[y];
 

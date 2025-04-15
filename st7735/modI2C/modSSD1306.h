@@ -4,8 +4,8 @@
 #define SSD1306_PAGES       (SSD1306_H / 8) // 8 pages for 64 rows
 // #define SSD1306_PAGES       1 // 8 pages for 64 rows
 
-#define SSD1306_W_MASK	SSD1306_W - 1
-#define SSD1306_H_MASK	SSD1306_H - 1
+#define SSD1306_WIDTH_MASK	SSD1306_W - 1
+#define SSD1306_HEIGHT_MASK	SSD1306_H - 1
 
 
 int fd_i2c;
