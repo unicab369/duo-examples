@@ -67,24 +67,6 @@ void ssd1306_push_string(uint8_t x,uint8_t y,uint8_t *chr,uint8_t sizey) {
 	}
 }
 
-uint8_t frame_buffer[SSD1306_PAGES][SSD1306_W] = { 0 };
-
-typedef struct {
-	uint8_t page;
-	uint8_t bitmask;
-} M_Page_Mask;
-
-M_Page_Mask page_masks[SSD1306_H];
-
-
-void precompute_page_masks() {
-	for (uint8_t y = 0; y < SSD1306_H; y++) {
-		page_masks[y].page       = y >> 3;             // (y / 8)
-		page_masks[y].bitmask    = 1 << (y & 0x07);    // (y % 8)
-	}
-}
-
-
 void ssd1306_setWindow(
     uint8_t start_page, uint8_t end_page,
     uint8_t start_column, uint8_t end_column
@@ -107,6 +89,22 @@ static void writeMulti(uint8_t reg, uint8_t *buff, int len) {
 }
 
 
+typedef struct {
+	uint8_t page;
+	uint8_t bitmask;
+} M_Page_Mask;
+
+M_Page_Mask page_masks[SSD1306_H];
+
+uint8_t frame_buffer[SSD1306_PAGES][SSD1306_W] = { 0 };
+
+void precompute_page_masks() {
+	for (uint8_t y = 0; y < SSD1306_H; y++) {
+		page_masks[y].page       = y >> 3;             // (y / 8)
+		page_masks[y].bitmask    = 1 << (y & 0x07);    // (y % 8)
+	}
+}
+
 //! render area
 void ssd1306_renderArea(
 	uint8_t start_page, uint8_t end_page,
@@ -123,13 +121,6 @@ void ssd1306_renderArea(
 //! render the entire screen
 void ssd1306_renderFrame() {
 	ssd1306_renderArea(0, 7, 0, SSD1306_W);
-}
-
-//! prefill_pixel
-void prefill_pixel(uint8_t x, uint8_t y) {
-    if (x >= SSD1306_W || y >= SSD1306_H) return; // Skip if out of bounds
-    M_Page_Mask mask = page_masks[y];
-    frame_buffer[mask.page][x] |= mask.bitmask;
 }
 
 void modSSD1306_clearScreen(uint8_t color) {

@@ -44,6 +44,16 @@ uint64_t get_elapse_nanoSec(void callback()) {
     return elapse_ns(&start);
 }
 
+void print_elapse_nanoSec(const char *str, void callback(), int print_log) {
+    uint64_t elapse = get_elapse_nanoSec(callback);
+    if (print_log) printf("%s:\t %llu ns\n", str, elapse);
+}
+
+void print_elapse_microSec(const char *str, void callback(), int print_log) {
+    uint64_t elapse = get_elapse_nanoSec(callback) / 1000;
+    if (print_log) printf("%s:\t %llu us\n", str, elapse);
+}
+
 uint64_t get_elapse_microSec(void callback()) {
     return get_elapse_nanoSec(callback) / 1000;
 }
