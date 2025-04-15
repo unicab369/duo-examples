@@ -1,7 +1,7 @@
 #include "modSSD1306.h"
 
 //! compute_pixel
-void compute_pixel(uint8_t x, uint8_t y) {
+void compute_pixel(int x, int y) {
     if (x >= SSD1306_W || y >= SSD1306_H) return; // Skip if out of bounds
     M_Page_Mask mask = page_masks[y];
     frame_buffer[mask.page][x] |= mask.bitmask;
@@ -16,8 +16,8 @@ int compute_horLine(
     if (y >= SSD1306_H) return -1;
 
 	// Clamp to display bounds - branchless operation
-    x0 = (x0 >= SSD1306_H) ? SSD1306_W_MASK : x0;
-    x1 = (x1 >= SSD1306_H) ? SSD1306_W_MASK : x1;
+    x0 = (x0 >= SSD1306_W) ? SSD1306_W_MASK : x0;
+    x1 = (x1 >= SSD1306_W) ? SSD1306_W_MASK : x1;
     
 	// Handle mirroring
 	if (mirror) {
@@ -301,29 +301,29 @@ void compute_poly(int *xs, int *ys, int num_pts, int thickness) {
     compute_line(xs[num_pts - 1], ys[num_pts - 1], xs[0], ys[0], thickness);
 }
 
-//! compute_circle
-void compute_circle2(
-	int x0, int y0, uint8_t radius
+//! compute_circleLine
+static int compute_circleLine(
+	int x0, int y0, int radius
 ) {
 	// Validate center coordinates
-	if (x0 >= SSD1306_W || y0 >= SSD1306_H) return;
+	if (x0 >= SSD1306_W || y0 >= SSD1306_H) return -1;
 
-    int16_t x = -radius;
-    int16_t y = 0;
-    int16_t err = 2 - 2 * radius;
-	int16_t e2;
+    int x = -radius;
+    int y = 0;
+    int err = 2 - 2 * radius;
+	int e2;
 
     do {
         // Calculate endpoints with clamping
-        uint8_t x_start 	= x0 + x;
-        uint8_t x_end   	= x0 - x;
-        uint8_t y_top   	= y0 - y;
-        uint8_t y_bottom 	= y0 + y;
+        int x_start 	= x0 + x;
+        int x_end   	= x0 - x;
+        int y_top   	= y0 - y;
+        int y_bottom 	= y0 + y;
 
-        uint8_t xy_start 	= x0 + y;
-        uint8_t xy_end   	= x0 - y;
-        uint8_t yx_start 	= y0 + x;
-        uint8_t yx_end   	= y0 - x;
+        int xy_start 	= x0 + y;
+        int xy_end   	= x0 - y;
+        int yx_start 	= y0 + x;
+        int yx_end   	= y0 - x;
 
         // Draw all 8 symmetric points (using precomputed page_masks)
         compute_pixel(x_end		, y_bottom); 	// Octant 1
@@ -343,43 +343,51 @@ void compute_circle2(
         }
         if (e2 > x) err += ++x * 2 + 1;
     } while (x <= 0);
+
+    return 1;
 }
 
-void compute_fastHorLine(uint8_t y, uint8_t x0, uint8_t x1) {
+//! compute_fastHorLine
+static void compute_fastHorLine(int y, int x0, int x1, int color) {
     if (y >= SSD1306_H) return;
     
 	// Clamp x-coordinates - branchless operation
-    x0 = (x0 >= SSD1306_H) ? SSD1306_W_MASK : x0;
-    x1 = (x1 >= SSD1306_H) ? SSD1306_W_MASK : x1;
+    x0 = (x0 >= SSD1306_W) ? SSD1306_W_MASK : x0;
+    x1 = (x1 >= SSD1306_W) ? SSD1306_W_MASK : x1;
 
     M_Page_Mask mask = page_masks[y];
-    for (uint8_t x = x0; x <= x1; x++) {
-        frame_buffer[mask.page][x] |= mask.bitmask;
+
+    for (int x = x0; x <= x1; x++) {
+        if (color) {
+            frame_buffer[mask.page][x] |= mask.bitmask;  // Set pixel (foreground)
+        } else {
+            frame_buffer[mask.page][x] &= ~mask.bitmask; // Clear pixel (background)
+        }
     }
 }
 
 //! compute_filledCircle
 void compute_filledCircle(
-    int x0, int y0, uint8_t radius
+    int x0, int y0, int radius, int color
 ) {
 	// Validate center coordinates
 	if (x0 >= SSD1306_W || y0 >= SSD1306_H) return;
 
-    int16_t x = -radius;
-    int16_t y = 0;
-    int16_t err = 2 - 2 * radius;
-	int16_t e2;
+    int x = -radius;
+    int y = 0;
+    int err = 2 - 2 * radius;
+	int e2;
 
     do {
         // Calculate endpoints with clamping
-        uint8_t x_start 	= x0 + x;
-        uint8_t x_end   	= x0 - x;
-        uint8_t y_top   	= y0 - y;
-        uint8_t y_bottom 	= y0 + y;
+        int x_start 	= x0 + x;
+        int x_end   	= x0 - x;
+        int y_top   	= y0 - y;
+        int y_bottom 	= y0 + y;
 
         // Draw filled horizontal lines (top and bottom halves)
-        compute_fastHorLine(y_top, x_start, x_end);     // Top half
-        compute_fastHorLine(y_bottom, x_start, x_end);  // Bottom half
+        compute_fastHorLine(y_top, x_start, x_end, color);     // Top half
+        compute_fastHorLine(y_bottom, x_start, x_end, color);  // Bottom half
 
         // Update Bresenham error
 		e2 = err;
@@ -391,63 +399,18 @@ void compute_filledCircle(
     } while (x <= 0);
 }
 
-void compute_circle(int x0, int y0, uint8_t radius, uint8_t thickness) {
+//! compute_circle
+int compute_circle(int x0, int y0, int radius, int thickness) {
     // Validate parameters
-    if (radius == 0) return;
-    
-    // Handle filled circle if thickness is 0
-    if (thickness == 0) thickness = radius;
+    if (radius == 0 || thickness < 1 || thickness > radius) return -1;
 
-    uint8_t outer_r = radius;
-    uint8_t inner_r = (thickness >= radius) ? 0 : radius - thickness;
-
-    // Modified midpoint circle algorithm
-    int x = outer_r;
-    int y = 0;
-    int err = 0;
-
-    while (x >= y) {
-        // Calculate endpoints once
-        uint8_t outer_x0 = x0 - x;
-        uint8_t outer_x1 = x0 + x;
-        uint8_t outer_y0 = y0 - y;
-        uint8_t outer_y1 = y0 + y;
-        
-        uint8_t swap_x0 = x0 - y;
-        uint8_t swap_x1 = x0 + y;
-        uint8_t swap_y0 = y0 - x;
-        uint8_t swap_y1 = y0 + x;
-
-        // Draw outer circle (8 octants via 4 horizontal lines)
-        compute_fastHorLine(outer_y1, outer_x0, outer_x1); // Bottom
-        compute_fastHorLine(outer_y0, outer_x0, outer_x1); // Top
-        compute_fastHorLine(swap_y1, swap_x0, swap_x1);    // Right
-        compute_fastHorLine(swap_y0, swap_x0, swap_x1);    // Left
-
-        // Draw inner circle for thickness
-        if (inner_r > 0) {
-            uint8_t inner_x = (x * inner_r + outer_r/2) / outer_r; // Rounded division
-            uint8_t inner_y = (y * inner_r + outer_r/2) / outer_r;
-            
-            uint8_t inner_x0 = x0 - inner_x;
-            uint8_t inner_x1 = x0 + inner_x;
-            compute_fastHorLine(y0 + inner_y, inner_x0, inner_x1);
-            compute_fastHorLine(y0 - inner_y, inner_x0, inner_x1);
-            
-            inner_x0 = x0 - inner_y;
-            inner_x1 = x0 + inner_y;
-            compute_fastHorLine(y0 + inner_x, inner_x0, inner_x1);
-            compute_fastHorLine(y0 - inner_x, inner_x0, inner_x1);
-        }
-
-        // Midpoint algorithm update
-        y++;
-        err += 1 + 2*y;
-        if (2*(err - x) + 1 > 0) {
-            x--;
-            err += 1 - 2*x;
-        }
+    if (thickness == 1) {
+        compute_circleLine(x0, y0, radius);
     }
+
+    compute_filledCircle(x0, y0, radius, 1);                // First draw the outer filled circle
+    compute_filledCircle(x0, y0, radius - thickness, 0);    // Then subtract the inner circle
+    return 1;
 }
 
 void test_clearScreen1() {
@@ -478,20 +441,20 @@ void shift_value(int shift, int *input, int len) {
 
 void test_hexagon() {
     int x_points[] = { 12, 16, 24, 18, 22, 12, 2, 6, 0, 8 };
-    shift_value(50, x_points, 10);
+    shift_value(80, x_points, sizeof(x_points)/sizeof(int));
     
     int y_points[] = { 0, 8, 8, 14, 22, 16, 22, 14, 8, 8 };
-    shift_value(30, y_points, 10);
+    shift_value(30, y_points, sizeof(x_points)/sizeof(int));
     
     compute_poly(x_points, y_points, 10, 1);
 }
 
 void test_circle() {
-    compute_circle(20, 20, 15, 2);
+    compute_circle(60, 20, 10, 2);
 }
 
 void test_filledCircle() {
-    compute_filledCircle(40, 40, 15);
+    compute_filledCircle(60, 40, 10, 1);
 }
 
 void test_prefillLines(int print_log) {
@@ -511,7 +474,7 @@ void test_prefillLines(int print_log) {
 
     print_elapse_nanoSec("test_circle", test_circle, print_log);
 
-    print_elapse_nanoSec("test_filledCircle", test_filledCircle, print_log);
+    print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
 
     print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
     
