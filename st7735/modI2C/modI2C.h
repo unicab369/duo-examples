@@ -27,7 +27,7 @@ void test_verLine() {
 }
 
 void test_bLine() {
-    prefill_line(0, 0, SSD1306_H, SSD1306_H, 3);
+    prefill_line(0, 0, SSD1306_H, SSD1306_H, 10);
 }
 
 void modI2C_task(int print_log) {
