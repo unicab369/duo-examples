@@ -118,25 +118,25 @@ void prefill_line(int x0, int y0, int x1, int y1, int thickness) {
     int min_y = MIN(MIN(y[0], y[1]), MIN(y[2], y[3]));
     int max_y = MAX(MAX(y[0], y[1]), MAX(y[2], y[3]));
     
-    // Clamp to display
-    min_x = CLAMP(min_x, 0, SSD1306_W-1);
-    max_x = CLAMP(max_x, 0, SSD1306_W-1);
-    min_y = CLAMP(min_y, 0, SSD1306_H-1);
-    max_y = CLAMP(max_y, 0, SSD1306_H-1);
-    
+    // Clamp to display (branchless version)
+    min_x = (min_x < 0) ? 0 : (min_x >= SSD1306_W) ? SSD1306_W_MASK : min_x;
+    max_x = (max_x < 0) ? 0 : (max_x >= SSD1306_W) ? SSD1306_W_MASK : max_x;
+    min_y = (min_y < 0) ? 0 : (min_y >= SSD1306_H) ? SSD1306_H_MASK : min_y;
+    max_y = (max_y < 0) ? 0 : (max_y >= SSD1306_H) ? SSD1306_H_MASK : max_y;
+
     // Scanline fill the polygon
     for (int y_pos = min_y; y_pos <= max_y; y_pos++) {
         M_Page_Mask mask = page_masks[y_pos];
         uint8_t* row = &frame_buffer[mask.page][0];
         
-        // Find intersections with edges
+        // Find intersections with edges (unchanged)
         int intersections[4];
         int count = 0;
         
         for (int i = 0; i < 4; i++) {
             int j = (i + 1) % 4;
-            if ((y[i] > y_pos && y[j] > y_pos) || 
-                (y[i] < y_pos && y[j] < y_pos)) continue;
+            if ((y[i] > y_pos && y[j] > y_pos) || (y[i] < y_pos && y[j] < y_pos)) 
+                continue;
                 
             if (y[i] == y[j]) {  // Horizontal edge
                 intersections[count++] = x[i];
@@ -146,27 +146,56 @@ void prefill_line(int x0, int y0, int x1, int y1, int thickness) {
                 intersections[count++] = x_intersect;
             }
         }
-        
-        // Sort intersections and draw spans
+
+        // --- OPTIMIZED SORTING & DRAWING ---
         if (count >= 2) {
-            // Simple bubble sort for small count
-            for (int i = 0; i < count-1; i++) {
-                for (int j = i+1; j < count; j++) {
-                    if (intersections[i] > intersections[j]) {
-                        int tmp = intersections[i];
-                        intersections[i] = intersections[j];
-                        intersections[j] = tmp;
-                    }
-                }
-            }
-            
-            // Draw between pairs of intersections
-            for (int i = 0; i < count; i += 2) {
-                int start = CLAMP(intersections[i], 0, SSD1306_W-1);
-                int end = CLAMP(intersections[i+1], 0, SSD1306_W-1);
+            // Branchless sort for 2 or 4 intersections
+            if (count == 2) {
+                int start = intersections[0];
+                int end   = intersections[1];
+                // Branchless swap to ensure start <= end
+                int tmp = (start > end) ? end : start;
+                end     = (start > end) ? start : end;
+                start   = tmp;
                 
-                for (int x_pos = start; x_pos <= end; x_pos++) {
-                    row[x_pos] |= mask.bitmask;
+                // Clamp and draw (unchanged)
+                start = CLAMP(start, 0, SSD1306_W-1);
+                end   = CLAMP(end,   start, SSD1306_W-1);
+                uint8_t* p = row + start;
+                uint8_t* end_ptr = row + end;
+                while (p <= end_ptr) *p++ |= mask.bitmask;
+            }
+
+            else if (count == 4) {
+                // Load all 4 points
+                int a = intersections[0], b = intersections[1];
+                int c = intersections[2], d = intersections[3];
+                
+                // Sort pairs (branchless)
+                int min_ab = MIN(a, b), max_ab = MAX(a, b);
+                int min_cd = MIN(c, d), max_cd = MAX(c, d);
+                
+                // Merge pairs (branchless)
+                int start1 = MIN(min_ab, min_cd);
+                int end1   = MAX(min_ab, min_cd);
+                int start2 = MIN(max_ab, max_cd);
+                int end2   = MAX(max_ab, max_cd);
+                
+                // Clamp and draw spans
+                start1 = CLAMP(start1, 0, SSD1306_W-1);
+                end1   = CLAMP(end1,   start1, SSD1306_W-1);
+                start2 = CLAMP(start2, 0, SSD1306_W-1);
+                end2   = CLAMP(end2,   start2, SSD1306_W-1);
+                
+                // Fill spans
+                uint8_t* p = row + start1;
+                uint8_t* end_ptr = row + end1;
+                while (p <= end_ptr) *p++ |= mask.bitmask;
+                
+                if (start2 > end1) {  // Non-overlapping spans only
+                    p = row + start2;
+                    end_ptr = row + end2;
+                    while (p <= end_ptr) *p++ |= mask.bitmask;
                 }
             }
         }
