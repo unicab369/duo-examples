@@ -29,16 +29,16 @@ void test_verLine() {
 void modI2C_task(int print_log) {
     uint64_t elapse;
 
-    // elapse = get_elapse_time_us(test_clearScreen1);
+    // elapse = get_elapse_microSec(test_clearScreen1);
     // if (print_log) printf("test_clearScreen1:\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(test_horLine);
-    if (print_log) printf("test_horLine:\t\t %llu us\n", elapse);
+    elapse = get_elapse_nanoSec(test_horLine);
+    if (print_log) printf("test_horLine:\t\t %llu ns\n", elapse);
 
-    elapse = get_elapse_time_us(test_verLine);
-    if (print_log) printf("test_verLine:\t\t %llu us\n", elapse);
+    elapse = get_elapse_nanoSec(test_verLine);
+    if (print_log) printf("test_verLine:\t\t %llu ns\n", elapse);
 
-    elapse = get_elapse_time_us(ssd1306_renderFrame);
+    elapse = get_elapse_microSec(ssd1306_renderFrame);
     if (print_log) printf("ssd1306_renderFrame:\t %llu us\n", elapse);
 
     delayMicroseconds(400E3);

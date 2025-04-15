@@ -130,3 +130,8 @@ The SARADC utilization reference is the [CV180x CV181x Peripheral Drive Operatio
 # FORUM
 
 - [MilkV Community](https://community.milkv.io/)
+
+
+
+
+poweroff

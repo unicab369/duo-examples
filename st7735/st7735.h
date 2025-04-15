@@ -110,34 +110,34 @@ int st7735_init() {
 void st7735_task(int print_log) {
     uint64_t elapse;
         
-    // elapse = get_elapse_time_us(fill_screen);
+    // elapse = get_elapse_microSec(fill_screen);
     // printf("fill_rect time: %llu us\n", elapse);       
 
-    elapse = get_elapse_time_us(draw_horLine);
+    elapse = get_elapse_microSec(draw_horLine);
     if (print_log) printf("hor_line:\t\t %llu us\n", elapse);       
 
-    elapse = get_elapse_time_us(draw_verLine);
+    elapse = get_elapse_microSec(draw_verLine);
     if (print_log) printf("ver_line:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(draw_line1);
+    elapse = get_elapse_microSec(draw_line1);
     if (print_log) printf("draw_line1:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(fill_rect);
+    elapse = get_elapse_microSec(fill_rect);
     if (print_log) printf("fill_rect:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(draw_circle);
+    elapse = get_elapse_microSec(draw_circle);
     if (print_log) printf("draw_circle:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(fill_circle);
+    elapse = get_elapse_microSec(fill_circle);
     if (print_log) printf("fill_circle:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(draw_rectangle);
+    elapse = get_elapse_microSec(draw_rectangle);
     if (print_log) printf("draw_rect:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(draw_poly);
+    elapse = get_elapse_microSec(draw_poly);
     if (print_log) printf("draw_poly:\t\t %llu us\n", elapse);
 
-    elapse = get_elapse_time_us(draw_filled_poly);
+    elapse = get_elapse_microSec(draw_filled_poly);
     if (print_log) printf("draw_filled_poly:\t %llu us\n", elapse);
 
     if (print_log) printf("\n");

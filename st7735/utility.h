@@ -27,7 +27,7 @@ static uint64_t elapse_ns(struct timespec *start) {
     return (sec_diff * 1E9) + nsec_diff;
 }
 
-uint64_t get_elapse_ns(void callback()) {
+uint64_t get_elapse_nanoSec(void callback()) {
     struct timespec start, end;
     
     //! Start timer
@@ -42,11 +42,9 @@ uint64_t get_elapse_ns(void callback()) {
     return elapse_ns(&start);
 }
 
-uint64_t get_elapse_time_us(void callback()) {
-    return get_elapse_ns(callback) / 1000;
+uint64_t get_elapse_microSec(void callback()) {
+    return get_elapse_nanoSec(callback) / 1000;
 }
-
-
 
 
 static struct timespec ref_timer;

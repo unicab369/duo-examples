@@ -4,8 +4,8 @@
 #define SSD1306_PAGES       (SSD1306_H / 8) // 8 pages for 64 rows
 // #define SSD1306_PAGES       1 // 8 pages for 64 rows
 
-#define SSD1306_W_LIMIT	SSD1306_W - 1
-#define SSD1306_H_LIMIT	SSD1306_H - 1
+#define SSD1306_W_MASK	SSD1306_W - 1
+#define SSD1306_H_MASK	SSD1306_H - 1
 
 
 int fd_i2c;
@@ -115,7 +115,7 @@ void ssd1306_renderArea(
 	ssd1306_setWindow(start_page, end_page, col_start, col_end-1);
 
     // writeMulti(0x40, &frame_buffer[start_page][col_start], sizeof(frame_buffer));
-    for (uint8_t page = start_page; page < end_page; page++) {
+    for (uint8_t page = start_page; page <= end_page; page++) {
         writeMulti(0x40, &frame_buffer[page][col_start], col_end - col_start);
     }
 }
