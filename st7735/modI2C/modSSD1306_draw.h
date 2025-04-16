@@ -438,31 +438,32 @@ void compute_str_atLine(uint8_t page, uint8_t column, const char *str) {
     }
 }
 
-void ssd1306_drawchar_sz(int x, int y, char chr, uint8_t color, int scale) {
-    if (scale < 1) scale = 1;
-    if (chr < 32 || chr > 126) return;
-    if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+//! compute_char
+static void compute_char(int x, int y, char chr, uint8_t color, int scale) {
+    // Early returns for invalid cases
+    if (scale == 0 || chr < 32 || chr > 126 || 
+        x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
 
     const uint8_t *char_data = FONT_7x5[chr - 32];
+    const uint8_t y_end = y + 7 * scale;
+    const uint8_t x_end = x + 5 * scale;
 
-    for (int col = 0; col < 5; col++) {
+    for (uint8_t col = 0; col < 5; col++) {
         uint8_t font_col = char_data[col];
+        uint8_t px_base = x + col * scale;
 
-        for (int row = 0; row < 7; row++) {
-            // Instead of (0x40 >> row), use (font_col & (1 << (6 - row)))
+        // Process all 7 rows
+        for (uint8_t row = 0; row < 7; row++) {
             if (font_col & (1 << (6 - row))) {
-
-                for (int h = 0; h < scale; h++) {
-                    for (int v = 0; v < scale; v++) {
-                        int px = x + (col * scale) + h;
-                        // int py = y + (row * scale) + v;                       
-                        
-                        //! Flip the y coordinate:
-                        int py = y + ((6 - row) * scale) + v;
-
-                        if (px < SSD1306_WIDTH && py < SSD1306_HEIGHT) {
-                            compute_pixel(px, py); // Or your pixel-setting function
-                        }
+                uint8_t py_base = y + (6 - row) * scale;
+                
+                // Optimized inner scaling loop
+                uint8_t px_end = px_base + scale;
+                uint8_t py_end = py_base + scale;
+                
+                for (uint8_t px = px_base; px < px_end && px < SSD1306_WIDTH; px++) {
+                    for (uint8_t py = py_base; py < py_end && py < SSD1306_HEIGHT; py++) {
+                        compute_pixel(px, py);
                     }
                 }
             }
@@ -470,12 +471,12 @@ void ssd1306_drawchar_sz(int x, int y, char chr, uint8_t color, int scale) {
     }
 }
 
-void ssd1306_drawstr_sz(int x, int y, char *str, uint8_t color, int scale) {
-    int current_x = x;
+void compute_string(int x, int y, char *str, uint8_t color, int scale) {
+    int x_max = SSD1306_WIDTH - (6 * scale);
 
-    while (*str && current_x < SSD1306_WIDTH - (6 * scale)) {
-        ssd1306_drawchar_sz(current_x, y, *str, color, scale);
-        current_x += 6 * scale; // 5 columns + 1 space
+    while (*str && x < x_max) {
+        compute_char(x, y, *str, color, scale);
+        x += 6 * scale; // 5 columns + 1 space
         str++;
     }
 }
@@ -534,7 +535,7 @@ void test_string() {
 }
 
 void test_string2() {
-    ssd1306_drawstr_sz(0, 20, "Hello MilkV Duozzz!", 1, 1);
+    compute_string(0, 20, "Hello MilkV Duozzz!", 1, 1);
 }
 
 void test_ssd1306_draw(int print_log) {
