@@ -438,28 +438,35 @@ void compute_str_atLine(uint8_t page, uint8_t column, const char *str) {
     }
 }
 
+typedef struct {
+    const uint8_t *FONT;
+    int font_width;
+    int font_height;
+    int scale, spacing;
+    uint8_t color;
+} M_Text;
+
 //! compute_char
-static void compute_char(int x, int y, char chr, uint8_t color, int scale) {
+static void compute_char(int x, int y, char chr, M_Text *model) {
     // Early returns for invalid cases
-    if (scale == 0 || chr < 32 || chr > 126 || 
+    if (model->scale == 0 || chr < 32 || chr > 126 || 
         x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
 
-    const uint8_t *char_data = FONT_7x5[chr - 32];
-    const uint8_t y_end = y + 7 * scale;
-    const uint8_t x_end = x + 5 * scale;
+    const uint8_t *char_data = model->FONT + ((chr - 32) * model->font_width);
+    uint8_t height_mask = model->font_height-1;
 
-    for (uint8_t col = 0; col < 5; col++) {
+    for (uint8_t col = 0; col < model->font_width; col++) {
         uint8_t font_col = char_data[col];
-        uint8_t px_base = x + col * scale;
+        uint8_t px_base = x + col * model->scale;
 
         // Process all 7 rows
-        for (uint8_t row = 0; row < 7; row++) {
-            if (font_col & (1 << (6 - row))) {
-                uint8_t py_base = y + (6 - row) * scale;
+        for (uint8_t row = 0; row < model->font_height; row++) {
+            if (font_col & (1 << (height_mask - row))) {
+                uint8_t py_base = y + (height_mask - row) * model->scale;
                 
                 // Optimized inner scaling loop
-                uint8_t px_end = px_base + scale;
-                uint8_t py_end = py_base + scale;
+                uint8_t px_end = px_base + model->scale;
+                uint8_t py_end = py_base + model->scale;
                 
                 for (uint8_t px = px_base; px < px_end && px < SSD1306_WIDTH; px++) {
                     for (uint8_t py = py_base; py < py_end && py < SSD1306_HEIGHT; py++) {
@@ -471,12 +478,14 @@ static void compute_char(int x, int y, char chr, uint8_t color, int scale) {
     }
 }
 
-void compute_string(int x, int y, char *str, uint8_t color, int scale) {
-    int x_max = SSD1306_WIDTH - (6 * scale);
+//! compute_string
+void compute_string(int x, int y, char *str, M_Text *model) {
+    int char_width = model->scale * (model->font_width + model->spacing);
+    int x_max = SSD1306_WIDTH - char_width;
 
     while (*str && x < x_max) {
-        compute_char(x, y, *str, color, scale);
-        x += 6 * scale; // 5 columns + 1 space
+        compute_char(x, y, *str, model);
+        x += char_width;
         str++;
     }
 }
@@ -535,7 +544,16 @@ void test_string() {
 }
 
 void test_string2() {
-    compute_string(0, 20, "Hello MilkV Duozzz!", 1, 1);
+    M_Text textModel = {
+        .FONT = (const uint8_t *)FONT_7x5,
+        .font_width = 5,
+        .font_height = 7,
+        .scale = 2,
+        .spacing = 1,
+        .color = 1
+    };
+
+    compute_string(0, 20, "Hello MilkV Duozzz!",  &textModel);
 }
 
 void test_ssd1306_draw(int print_log) {
