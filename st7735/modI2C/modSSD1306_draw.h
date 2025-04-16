@@ -438,6 +438,49 @@ void compute_str_atLine(uint8_t page, uint8_t column, const char *str) {
     }
 }
 
+void ssd1306_drawchar_sz(int x, int y, char chr, uint8_t color, int scale) {
+    if (scale < 1) scale = 1;
+    if (chr < 32 || chr > 126) return;
+    if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+
+    const uint8_t *char_data = FONT_7x5[chr - 32];
+
+    for (int col = 0; col < 5; col++) {
+        uint8_t font_col = char_data[col];
+
+        for (int row = 0; row < 7; row++) {
+            // Instead of (0x40 >> row), use (font_col & (1 << (6 - row)))
+            if (font_col & (1 << (6 - row))) {
+
+                for (int h = 0; h < scale; h++) {
+                    for (int v = 0; v < scale; v++) {
+                        int px = x + (col * scale) + h;
+                        // int py = y + (row * scale) + v;                       
+                        
+                        //! Flip the y coordinate:
+                        int py = y + ((6 - row) * scale) + v;
+
+                        if (px < SSD1306_WIDTH && py < SSD1306_HEIGHT) {
+                            compute_pixel(px, py); // Or your pixel-setting function
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ssd1306_drawstr_sz(int x, int y, char *str, uint8_t color, int scale) {
+    int current_x = x;
+
+    while (*str && current_x < SSD1306_WIDTH - (6 * scale)) {
+        ssd1306_drawchar_sz(current_x, y, *str, color, scale);
+        current_x += 6 * scale; // 5 columns + 1 space
+        str++;
+    }
+}
+
+
 void test_clearScreen1() {
     modSSD1306_clearScreen(0xFF);
 }
@@ -486,40 +529,38 @@ void test_filledCircle() {
     compute_filledCircle(60, 40, 10, 1);
 }
 
-void test_drawString() {
-    ssd1306_push_string(0, 0, "Hello MilkV Duozzz!", 8);
-    // ssd1306_push_string(0, 1, "Hello MilkV Duozzz!", 16);
-}
-
 void test_string() {
-    // ssd1306_drawstr(0, 0, "Hello MilkV Duozzz!", 1);
     compute_str_atLine(0, 0, "Hello MilkV Duozzz!");
 }
 
-void test_prefillLines(int print_log) {
+void test_string2() {
+    ssd1306_drawstr_sz(0, 20, "Hello MilkV Duozzz!", 1, 1);
+}
+
+void test_ssd1306_draw(int print_log) {
     uint64_t elapse;
 
     // print_elapse_nanoSec("test_clearScreen1", test_clearScreen1, print_log);
 
-    print_elapse_nanoSec("test_horLine", test_horLine, print_log);
+    // print_elapse_nanoSec("test_horLine", test_horLine, print_log);
 
-    print_elapse_nanoSec("test_verLine", test_verLine, print_log);
+    // print_elapse_nanoSec("test_verLine", test_verLine, print_log);
 
-    print_elapse_nanoSec("test_diagLine", test_diagLine, print_log);
+    // print_elapse_nanoSec("test_diagLine", test_diagLine, print_log);
 
-    print_elapse_nanoSec("test_rect", test_rect, print_log);
+    // print_elapse_nanoSec("test_rect", test_rect, print_log);
 
-    print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
+    // print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
 
-    print_elapse_nanoSec("test_hexagon", test_hexagon, print_log);
+    // print_elapse_nanoSec("test_hexagon", test_hexagon, print_log);
 
-    print_elapse_nanoSec("test_circle", test_circle, print_log);
+    // print_elapse_nanoSec("test_circle", test_circle, print_log);
 
-    print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
-
-    // print_elapse_nanoSec("test_drawStr", test_drawString, print_log);
+    // print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
 
     print_elapse_nanoSec("test_string", test_string, print_log);
+
+    print_elapse_nanoSec("test_string2", test_string2, print_log);
 
     print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
     

@@ -4,7 +4,7 @@
 
 #include <wiringx.h>
 
-#include "font_bitmap.h"
+#include "FONT_BITMAP.h"
 #include "modTFT/modTFT_shape.h"
 #include "modTFT/modTFT_text.h"
 

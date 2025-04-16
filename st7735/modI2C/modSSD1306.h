@@ -27,46 +27,14 @@ void modI2C_writeCmds(uint8_t *commands, int length) {
     }
 }
 
-void ssd1306_write_byte(unsigned dat, unsigned cmd) {
-	if(cmd) {
-		wiringXI2CWriteReg8(fd_i2c, 0x40, dat);
-	} else {
-		wiringXI2CWriteReg8(fd_i2c, 0x00, dat);
-	}
-}
+static void modI2C_writeData(uint8_t reg, uint8_t *buff, int len) {
+    int outputLen = len + 1;
+    uint8_t data[outputLen];
+	data[0] = reg;
 
-void ssd1306_set_position(unsigned char x, unsigned char y)  {
- 	ssd1306_write_byte(YLevel+y, OLED_CMD);
-	ssd1306_write_byte(((x&0xf0)>>4)|0x10, OLED_CMD);
-	ssd1306_write_byte((x&0x0f), OLED_CMD); 
-}
-
-void ssd1306_push_char(uint8_t x,uint8_t y,uint8_t chr,uint8_t sizey) {
-	uint8_t c=0, sizex=sizey/2;
-	uint16_t i=0, size1;
-
-	if (sizey==8) size1=6;
-	else size1 = (sizey/8+ ((sizey%8) ? 1:0)) * (sizey/2);
-	
-    c=chr-' ';
-	ssd1306_set_position(x,y);
-	
-    for(i=0; i<size1; i++) {
-		if (i%sizex == 0 && sizey!=8) ssd1306_set_position(x, y++);
-		if (sizey == 8) ssd1306_write_byte(asc2_0806[c][i], OLED_DATA);
-		else if (sizey==16) ssd1306_write_byte(asc2_1608[c][i], OLED_DATA);
-		else return;
-	}
-}
-
-void ssd1306_push_string(uint8_t x,uint8_t y,uint8_t *chr,uint8_t sizey) {
-	uint8_t j=0;
-
-	while (chr[j]!='\0') {	
-		ssd1306_push_char(x, y, chr[j++], sizey);
-		if (sizey==8) x += 6;
-		else x += sizey/2;
-	}
+	memcpy(&data[1], buff, len);
+	int rc = write(fd_i2c, data, outputLen);
+	if (rc != outputLen) {};
 }
 
 void ssd1306_setWindow(
@@ -79,17 +47,6 @@ void ssd1306_setWindow(
     uint8_t pageCmds[] = { 0x22, start_page, end_page };
     modI2C_writeCmds(pageCmds, sizeof(pageCmds));
 }
-
-static void writeMulti(uint8_t reg, uint8_t *buff, int len) {
-    int outputLen = len + 1;
-    uint8_t data[outputLen];
-	data[0] = reg;
-
-	memcpy(&data[1], buff, len);
-	int rc = write(fd_i2c, data, outputLen);
-	if (rc != outputLen) {};
-}
-
 
 typedef struct {
 	uint8_t page;
@@ -116,7 +73,7 @@ void ssd1306_renderArea(
 
     // writeMulti(0x40, &frame_buffer[start_page][col_start], sizeof(frame_buffer));
     for (uint8_t page = start_page; page <= end_page; page++) {
-        writeMulti(0x40, &frame_buffer[page][col_start], col_end - col_start);
+        modI2C_writeData(0x40, &frame_buffer[page][col_start], col_end - col_start);
     }
 }
 

@@ -12,5 +12,5 @@ int modI2C_init() {
 
 
 void modI2C_task(int print_log) {
-    test_prefillLines(print_log);
+    test_ssd1306_draw(print_log);
 }
