@@ -1,10 +1,14 @@
 #include "modSSD1306.h"
 
-//! compute_pixel
-void compute_pixel(int x, int y) {
-    if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return; // Skip if out of bounds
+//! compute_fastPixel
+void compute_fastPixel(int x, int y, int color) {
     M_Page_Mask mask = page_masks[y];
-    frame_buffer[mask.page][x] |= mask.bitmask;
+
+    if (color) {
+        frame_buffer[mask.page][x] |= mask.bitmask;  // Set pixel (foreground)
+    } else {
+        frame_buffer[mask.page][x] &= ~mask.bitmask; // Clear pixel (background)
+    }
 }
 
 //! compute_horLine
@@ -89,7 +93,7 @@ int compute_verLine(
 }
 
 //! compute_diagLine
-static int compute_diagLine(int x0, int y0, int x1, int y1) {
+static int compute_diagLine(int x0, int y0, int x1, int y1, int color) {
     // Clamp coordinates
     x0 = CLAMP(x0, 0, SSD1306_WIDTH_MASK);
     y0 = CLAMP(y0, 0, SSD1306_HEIGHT_MASK);
@@ -102,8 +106,7 @@ static int compute_diagLine(int x0, int y0, int x1, int y1) {
     int steps = MAX(abs(dx), abs(dy));
     
     if (steps == 0) { // Single point
-        M_Page_Mask mask = page_masks[y0];
-        frame_buffer[mask.page][x0] |= mask.bitmask;
+        compute_fastPixel(x0, y0, color);
         return -1;
     }
 
@@ -119,8 +122,7 @@ static int compute_diagLine(int x0, int y0, int x1, int y1) {
         int py = y >> 16;
         
         if (px >= 0 && px < SSD1306_WIDTH_MASK && py >= 0 && py < SSD1306_HEIGHT_MASK) {
-            M_Page_Mask mask = page_masks[py];
-            frame_buffer[mask.page][px] |= mask.bitmask;
+            compute_fastPixel(px, py, color);
         }
         
         x += x_step;
@@ -184,7 +186,7 @@ int compute_line(int x0, int y0, int x1, int y1, int thickness) {
 
     //! handle single pixel thickness line
     if (thickness == 1) {
-        compute_diagLine(x0, y0, x1, y1);
+        compute_diagLine(x0, y0, x1, y1, 1);
         return -1;
     }
     
@@ -330,7 +332,7 @@ void compute_poly(int *xs, int *ys, int num_pts, int thickness) {
 
 //! compute_circleLine
 static int compute_circleLine(
-	int x0, int y0, int radius
+	int x0, int y0, int radius, int color
 ) {
 	// Validate center coordinates
 	if (x0 >= SSD1306_WIDTH_MASK + radius ||
@@ -354,14 +356,14 @@ static int compute_circleLine(
         int yx_end   	= y0 - x;
 
         // Draw all 8 symmetric points (using precomputed page_masks)
-        compute_pixel(x_end		, y_bottom); 	// Octant 1
-        compute_pixel(x_start	, y_bottom); 	// Octant 2
-        compute_pixel(x_start	, y_top); 		// Octant 3
-        compute_pixel(x_end		, y_top); 		// Octant 4
-        compute_pixel(xy_end	, yx_start); 	// Octant 5
-        compute_pixel(xy_start	, yx_start); 	// Octant 6
-        compute_pixel(xy_start	, yx_end); 		// Octant 7
-        compute_pixel(xy_end	, yx_end); 		// Octant 8
+        compute_fastPixel(x_end		, y_bottom  , color); 	    // Octant 1
+        compute_fastPixel(x_start	, y_bottom  , color); 	    // Octant 2
+        compute_fastPixel(x_start	, y_top     , color); 		// Octant 3
+        compute_fastPixel(x_end		, y_top     , color); 		// Octant 4
+        compute_fastPixel(xy_end	, yx_start  , color); 	    // Octant 5
+        compute_fastPixel(xy_start	, yx_start  , color); 	    // Octant 6
+        compute_fastPixel(xy_start	, yx_end    , color); 		// Octant 7
+        compute_fastPixel(xy_end	, yx_end    , color); 		// Octant 8
 
         // Update Bresenham error
 		e2 = err;
@@ -415,7 +417,7 @@ int compute_circle(int x0, int y0, int radius, int thickness) {
     if (radius == 0 || thickness < 1 || thickness > radius) return -1;
 
     if (thickness == 1) {
-        compute_circleLine(x0, y0, radius);
+        compute_circleLine(x0, y0, radius, 1);
     }
 
     compute_filledCircle(x0, y0, radius, 1);                // First draw the outer filled circle
@@ -470,7 +472,7 @@ static void compute_char(int x, int y, char chr, M_Text *model) {
                 
                 for (uint8_t px = px_base; px < px_end && px < SSD1306_WIDTH; px++) {
                     for (uint8_t py = py_base; py < py_end && py < SSD1306_HEIGHT; py++) {
-                        compute_pixel(px, py);
+                        compute_fastPixel(px, py, model->color);
                     }
                 }
             }
@@ -532,7 +534,7 @@ void test_hexagon() {
 }
 
 void test_circle() {
-    compute_circle(60, 20, 10, 2);
+    compute_circle(60, 20, 10, 1);
 }
 
 void test_filledCircle() {
@@ -569,17 +571,17 @@ void test_ssd1306_draw(int print_log) {
 
     // print_elapse_nanoSec("test_rect", test_rect, print_log);
 
-    // print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
+    print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
 
     // print_elapse_nanoSec("test_hexagon", test_hexagon, print_log);
 
     // print_elapse_nanoSec("test_circle", test_circle, print_log);
 
-    // print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
+    print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
 
-    print_elapse_nanoSec("test_string", test_string, print_log);
+    // print_elapse_nanoSec("test_string", test_string, print_log);
 
-    print_elapse_nanoSec("test_string2", test_string2, print_log);
+    // print_elapse_nanoSec("test_string2", test_string2, print_log);
 
     print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
     
