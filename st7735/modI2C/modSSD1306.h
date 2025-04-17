@@ -9,9 +9,6 @@
 #define SSD1306_WIDTH_MASK	SSD1306_WIDTH - 1
 #define SSD1306_HEIGHT_MASK	SSD1306_HEIGHT - 1
 
-
-int fd_i2c;
-
 #define OLED_CMD     0
 #define OLED_DATA    1
 
@@ -19,21 +16,36 @@ int fd_i2c;
 #define YLevel       0xB0
 #define	Brightness	 0xFF 
 #define WIDTH 	     128
-#define HEIGHT 	     32	
+#define HEIGHT 	     32
 
-void modI2C_writeCmds(uint8_t *commands, int length) {
+typedef struct {
+    int host;
+    int addr;
+} M_I2C_Device;
+
+int selected_host = -1;
+
+void ssd1306_setHost(int host) {
+    selected_host = host;
+}
+
+void ssd1306_writeCmds(
+    uint8_t *commands, int length
+) {
     for (int i = 0; i < length; i++) {
-        wiringXI2CWriteReg8(fd_i2c, 0x00, commands[i]);
+        wiringXI2CWriteReg8(selected_host, 0x00, commands[i]);
     }
 }
 
-static void modI2C_writeData(uint8_t reg, uint8_t *buff, int len) {
+static void ssd1306_writeData(
+    uint8_t reg, uint8_t *buff, int len
+) {
     int outputLen = len + 1;
     uint8_t data[outputLen];
 	data[0] = reg;
 
 	memcpy(&data[1], buff, len);
-	int rc = write(fd_i2c, data, outputLen);
+	int rc = write(selected_host, data, outputLen);
 	if (rc != outputLen) {};
 }
 
@@ -42,10 +54,10 @@ void ssd1306_setWindow(
     uint8_t start_column, uint8_t end_column
 ) {
     uint8_t columnCmds[] = { 0x21, start_column, end_column };
-    modI2C_writeCmds(columnCmds, sizeof(columnCmds));
+    ssd1306_writeCmds(columnCmds, sizeof(columnCmds));
 
     uint8_t pageCmds[] = { 0x22, start_page, end_page };
-    modI2C_writeCmds(pageCmds, sizeof(pageCmds));
+    ssd1306_writeCmds(pageCmds, sizeof(pageCmds));
 }
 
 typedef struct {
@@ -73,7 +85,7 @@ void ssd1306_renderArea(
 
     // writeMulti(0x40, &frame_buffer[start_page][col_start], sizeof(frame_buffer));
     for (uint8_t page = start_page; page <= end_page; page++) {
-        modI2C_writeData(0x40, &frame_buffer[page][col_start], col_end - col_start);
+        ssd1306_writeData(0x40, &frame_buffer[page][col_start], col_end - col_start);
     }
 }
 
@@ -87,7 +99,10 @@ void modSSD1306_clearScreen(uint8_t color) {
     ssd1306_renderFrame();
 }
 
-void ssd1306_init(void) {
+int ssd1306_init(int host_id) {
+    //! set host before writing commands
+    ssd1306_setHost(host_id);
+
     uint8_t ssd1306_setup_cmd[] = {
         0xAE, // Display off
         0xD5, // Set display clock divide
@@ -116,9 +131,11 @@ void ssd1306_init(void) {
         0xAF, // Display on
     };
     
-    modI2C_writeCmds(ssd1306_setup_cmd, sizeof(ssd1306_setup_cmd));
+    ssd1306_writeCmds(ssd1306_setup_cmd, sizeof(ssd1306_setup_cmd));
 
     precompute_page_masks();
 
     modSSD1306_clearScreen(0); // Clear the screen
+
+    return 1;
 } 

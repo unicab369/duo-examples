@@ -8,6 +8,9 @@
 #define SWAP_INT(a, b)      { int temp = a; a = b; b = temp; }
 #define CLAMP(val, min, max) ((val < min) ? min : (val > max) ? max : val)
 
+#define BCD_TO_DECIMAL(bcd)         ((bcd >> 4) * 10 + (bcd & 0x0F))            // Convert BCD to decimal
+#define DECIMAL_TO_BCD(decimal)     (((decimal / 10) << 4) | (decimal % 10))    // Convert decimal to BCD
+
 static uint64_t elapse_ns(struct timespec *start) {
     struct timespec end;
     

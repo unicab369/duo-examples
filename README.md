@@ -132,6 +132,42 @@ The SARADC utilization reference is the [CV180x CV181x Peripheral Drive Operatio
 - [MilkV Community](https://community.milkv.io/)
 
 
+sudo apt-get install wget git make
+git clone https://github.com/milkv-duo/duo-examples.git
+cd duo-examples
+source envsetup.sh
+
+Select Product:
+1. Duo (CV1800B)
+2. Duo256M (SG2002) or DuoS (SG2000)
+
+cd hello-world
+make
+
+scp -O *projname* root@192.168.42.1:/root/
+
+[root@milkv]~# ./helloworld
+Hello, World!
 
 
+user@DESKTOP-333:~$ mkdir -pv ~/.ssh
+user@DESKTOP-333:~$ vi .ssh/config
+Host *
+  ControlPath ~/.ssh/master-%r@%h:%p
+  ControlMaster auto
+
+
+uni@DESKTOP-333:~$ cat .ssh/config
+Host *
+  ControlPath ~/.ssh/master-%r@%h:%p
+  ControlMaster auto
+
+make clean && make && scp -O milkV_mess root@192.168.42.1:/root/
+
+new terminal:
+ssh root@192.168.42.1  -v
+
+./st7735
+
+reboot
 poweroff

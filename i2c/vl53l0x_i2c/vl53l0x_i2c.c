@@ -32,7 +32,7 @@
  */
 
 // 使用到的I2C编号 The I2C number used
-#define I2C_NUM     1
+#define I2C_NUM     0
 
 // 器件地址 device address
 #define I2C_ADDR    0x29
