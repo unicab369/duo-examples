@@ -4,8 +4,8 @@
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 
-int host_ssd1306_0 = -1;
-int host_ssd1306_1 = -1;
+// int host_ssd1306_0 = -1;
+// int host_ssd1306_1 = -1;
 int host_bh1750 = -1;
 int host_sht31 = -1;
 int host_ap3216 = -1;
@@ -51,14 +51,20 @@ int ssd3231_update_date(int host, M_DateTime *dt) {
     return ret;
 }
 
+int modI2C_intSSD1306(M_SSD1306 *model) {
+    modI2C_setupDevice(model->channel, model->address, &model->host);
+    ssd1306_init(model->host);
+    return 1;
+}
+
 int modI2C_init() {
     int ret;
 
-    modI2C_setupDevice(0, 0x3C, &host_ssd1306_0);
-    ssd1306_init(host_ssd1306_0);
+    // modI2C_setupDevice(0, 0x3C, &host_ssd1306_0);
+    // ssd1306_init(host_ssd1306_0);
 
-    modI2C_setupDevice(1, 0x3C, &host_ssd1306_1);
-    ssd1306_init(host_ssd1306_1);
+    // modI2C_setupDevice(1, 0x3C, &host_ssd1306_1);
+    // ssd1306_init(host_ssd1306_1);
 
     //! BH1750
     modI2C_setupDevice(0, 0x23, &host_bh1750);
@@ -250,7 +256,7 @@ void modI2C_task(int print_log) {
     if (now - last_i2c_time < 200) return;
     last_i2c_time = now;
 
-    test_ssd1306_draw(0, host_ssd1306_0);
+    // test_ssd1306_draw(0, host_ssd1306_0);
     // test_ssd1306_draw(0, host_ssd1306_1);
 
     // bh1750_get_reading(host_bh1750);

@@ -542,7 +542,7 @@ void test_filledCircle() {
 }
 
 void test_string() {
-    compute_str_atLine(0, 0, "Hello MilkV Duozzz!");
+    compute_str_atLine(0, 0, "Hello Bee!");
 }
 
 void test_string2() {
@@ -555,41 +555,49 @@ void test_string2() {
         .color = 1
     };
 
-    compute_string(0, 20, "Hello MilkV Duozzz!",  &textModel);
+    compute_string(0, 20, "Hello Bee!",  &textModel);
 }
 
-void test_ssd1306_draw(int print_log, int i2c_host) {
-    uint64_t elapse;
+
+typedef struct {
+    int channel;
+    int host;
+    int address;
+    int last_change_time;
+    int print_log;
+} M_SSD1306;
+
+void test_ssd1306_draw(M_SSD1306 *model) {
+    uint32_t now = millis();
+    if (now - model->last_change_time < 1000) return;
+    model->last_change_time = now;
 
     //! set host before writting data
-    // printf("draw on host:\t\t %d\n", i2c_host);
-    ssd1306_setHost(i2c_host);
-
+    // printf("draw on host:\t\t %d\n", ssd1306->host);
+    ssd1306_setHost(model->host);
     modSSD1306_clearScreen(0x00);
     
     // print_elapse_nanoSec("test_clearScreen1", test_clearScreen1, print_log);
 
-    print_elapse_nanoSec("test_horLine", test_horLine, print_log);
+    print_elapse_nanoSec("test_horLine", test_horLine, model->print_log);
 
-    print_elapse_nanoSec("test_verLine", test_verLine, print_log);
+    print_elapse_nanoSec("test_verLine", test_verLine, model->print_log);
 
-    print_elapse_nanoSec("test_diagLine", test_diagLine, print_log);
+    print_elapse_nanoSec("test_diagLine", test_diagLine, model->print_log);
 
-    print_elapse_nanoSec("test_rect", test_rect, print_log);
+    print_elapse_nanoSec("test_rect", test_rect, model->print_log);
 
-    print_elapse_nanoSec("test_filRect", test_fillRect, print_log);
+    print_elapse_nanoSec("test_filRect", test_fillRect, model->print_log);
 
-    print_elapse_nanoSec("test_hexagon", test_hexagon, print_log);
+    print_elapse_nanoSec("test_hexagon", test_hexagon, model->print_log);
 
-    print_elapse_nanoSec("test_circle", test_circle, print_log);
+    print_elapse_nanoSec("test_circle", test_circle, model->print_log);
 
-    print_elapse_nanoSec("test_filCircle", test_filledCircle, print_log);
+    print_elapse_nanoSec("test_filCircle", test_filledCircle, model->print_log);
 
-    print_elapse_nanoSec("test_string", test_string, print_log);
+    print_elapse_nanoSec("test_string", test_string, model->print_log);
 
-    print_elapse_nanoSec("test_string2", test_string2, print_log);
+    print_elapse_nanoSec("test_string2", test_string2, model->print_log);
 
-    print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
-    
-    // delayMicroseconds(1000E3);
+    print_elapse_microSec("renderFrame", ssd1306_renderFrame, model->print_log);
 }

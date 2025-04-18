@@ -24,6 +24,20 @@ int main() {
     st7735_init();
     modI2C_init();
 
+    M_SSD1306 ssd1306_0 = {
+        .channel = 0,
+        .address = 0x3C,
+        .print_log = 0
+    };
+    modI2C_intSSD1306(&ssd1306_0);
+
+    M_SSD1306 ssd1306_1 = {
+        .channel = 1,
+        .address = 0x3C,
+        .print_log = 0
+    };
+    modI2C_intSSD1306(&ssd1306_1);
+
     M_Encoder encoder = {
         .DT_PIN = 21,
         .CLK_PIN = 20,
@@ -37,10 +51,13 @@ int main() {
     joystick_init(&joystick);
 
     while(1) {
-        // st7735_task(0);
+        st7735_task(0);
         modI2C_task(0);
         encoder_task(&encoder, encoder_cb);
         joystick_task(&joystick, joystick_cb);
+
+        test_ssd1306_draw(&ssd1306_0);
+        test_ssd1306_draw(&ssd1306_1);
     }
 
     return 0;

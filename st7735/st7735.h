@@ -152,7 +152,6 @@ void st7735_task(int print_log) {
 
     if (print_log) printf("\n");
     digitalWrite(conf.CS, HIGH);
-    delayMicroseconds(800E3);
 
     // delayMicroseconds(400E3);
 }
