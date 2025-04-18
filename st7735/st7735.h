@@ -109,7 +109,13 @@ int st7735_init() {
     return 1;
 }
 
+static uint32_t last_st7735_time = 0;
+
 void st7735_task(int print_log) {
+    uint32_t now = millis();
+    if (now - last_st7735_time < 100) {return; }
+    last_st7735_time = now;
+    
     uint64_t elapse;
         
     digitalWrite(conf.CS, LOW);

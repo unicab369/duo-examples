@@ -3,7 +3,9 @@
 #include "modI2C/modI2C.h"
 
 #include <sys/reboot.h>
+
 #include "modGPIO/modEncoder.h"
+#include "modGPIO/modJoystick.h"
 
 void reboot_system() {
     printf("\nRebooting system...\n");
@@ -14,28 +16,31 @@ void encoder_cb(int position, int direction) {
     printf("Position: %d, Direction: %d\n", position, direction);
 }
 
-M_Encoder encoder = {
-    .DT_PIN = 20,
-    .CLK_PIN = 21,
-    .callback = encoder_cb
-};  
+void joystick_cb(int x, int y) {
+    printf("x: %d, y: %d\n", x, y);
+}
 
 int main() {
     st7735_init();
     modI2C_init();
 
+    M_Encoder encoder = {
+        .DT_PIN = 21,
+        .CLK_PIN = 20,
+    };
     encoder_init(&encoder);
-
-    pinMode(26, PINMODE_OUTPUT);
-    pinMode(27, PINMODE_OUTPUT);
-
-    digitalWrite(26, HIGH);
-    digitalWrite(27, HIGH);
+    
+    M_Joystick joystick = {
+        .X_PIN = 26,
+        .Y_PIN = 27,
+    };
+    joystick_init(&joystick);
 
     while(1) {
         // st7735_task(0);
-        // modI2C_task(1);
-        encoder_task(&encoder);
+        modI2C_task(0);
+        encoder_task(&encoder, encoder_cb);
+        joystick_task(&joystick, joystick_cb);
     }
 
     return 0;

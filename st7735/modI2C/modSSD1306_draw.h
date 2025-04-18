@@ -562,9 +562,11 @@ void test_ssd1306_draw(int print_log, int i2c_host) {
     uint64_t elapse;
 
     //! set host before writting data
-    printf("draw on host:\t\t %d\n", i2c_host);
+    // printf("draw on host:\t\t %d\n", i2c_host);
     ssd1306_setHost(i2c_host);
 
+    modSSD1306_clearScreen(0x00);
+    
     // print_elapse_nanoSec("test_clearScreen1", test_clearScreen1, print_log);
 
     print_elapse_nanoSec("test_horLine", test_horLine, print_log);
@@ -589,8 +591,5 @@ void test_ssd1306_draw(int print_log, int i2c_host) {
 
     print_elapse_microSec("renderFrame", ssd1306_renderFrame, print_log);
     
-    delayMicroseconds(1000E3);
-    modSSD1306_clearScreen(0x00);
-
-    printf("\n");
+    // delayMicroseconds(1000E3);
 }

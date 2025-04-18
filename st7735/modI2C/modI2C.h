@@ -243,21 +243,27 @@ void sht31_get_reading(int host) {
     // printf("SHT31 reading: %d\n", reading);
 }
 
+static uint32_t last_i2c_time = 0;
+
 void modI2C_task(int print_log) {
+    uint32_t now = millis();
+    if (now - last_i2c_time < 200) return;
+    last_i2c_time = now;
+
     test_ssd1306_draw(0, host_ssd1306_0);
-    test_ssd1306_draw(0, host_ssd1306_1);
+    // test_ssd1306_draw(0, host_ssd1306_1);
 
-    bh1750_get_reading(host_bh1750);
-    ap3216_get_reading(host_ap3216);
-    ap9960_get_reading(host_apds9960);
-    max44009_get_reading(host_max44009);
-    vl53l0x_get_reading(host_vl53lox);
-    mpu6050_get_reading(host_mpu6050);
-    ina219_get_reading(host_ina219);
-    sht31_get_reading(host_sht31);
+    // bh1750_get_reading(host_bh1750);
+    // ap3216_get_reading(host_ap3216);
+    // ap9960_get_reading(host_apds9960);
+    // max44009_get_reading(host_max44009);
+    // vl53l0x_get_reading(host_vl53lox);
+    // mpu6050_get_reading(host_mpu6050);
+    // ina219_get_reading(host_ina219);
+    // sht31_get_reading(host_sht31);
 
-    M_DateTime dt;
-    ssd3231_read_dateTime(host_ds3231, &dt);
-    printf("DS3231 reading: %d:%d:%d %d/%d/%d\n", dt.hr, dt.min, dt.sec, dt.date, dt.month, dt.year);
-    printf("\n");
+    // M_DateTime dt;
+    // ssd3231_read_dateTime(host_ds3231, &dt);
+    // printf("DS3231 reading: %d:%d:%d %d/%d/%d\n", dt.hr, dt.min, dt.sec, dt.date, dt.month, dt.year);
+    // printf("\n");
 }
