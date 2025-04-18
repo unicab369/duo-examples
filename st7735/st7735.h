@@ -14,9 +14,11 @@
 
 M_Spi_Conf conf = {
     .HOST = 2,
-    .CS = 15,      //! the main cs pin
-    .DC = 5,       // set to -1 when not use
-    .RST = 4       // set to -1 when not use
+    .CS = 9,      //! the main cs pin
+    // .DC = 5,       // set to -1 when not use
+    // .RST = 4       // set to -1 when not use
+    .DC = 4,       // set to -1 when not use
+    .RST = 5       // set to -1 when not use
 };
 
 #define LINE_COLLOR ORANGE
@@ -110,6 +112,8 @@ int st7735_init() {
 void st7735_task(int print_log) {
     uint64_t elapse;
         
+    digitalWrite(conf.CS, LOW);
+
     // elapse = get_elapse_microSec(fill_screen);
     // printf("fill_rect time: %llu us\n", elapse);       
 
@@ -142,8 +146,7 @@ void st7735_task(int print_log) {
 
     if (print_log) printf("\n");
     digitalWrite(conf.CS, HIGH);
-    delayMicroseconds(400E3);
+    delayMicroseconds(800E3);
 
-    digitalWrite(conf.CS, LOW);
-    delayMicroseconds(400E3);
+    // delayMicroseconds(400E3);
 }

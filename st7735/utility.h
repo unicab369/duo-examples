@@ -11,6 +11,13 @@
 #define BCD_TO_DECIMAL(bcd)         ((bcd >> 4) * 10 + (bcd & 0x0F))            // Convert BCD to decimal
 #define DECIMAL_TO_BCD(decimal)     (((decimal / 10) << 4) | (decimal % 10))    // Convert decimal to BCD
 
+void print_hex(uint8_t *data, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
 static uint64_t elapse_ns(struct timespec *start) {
     struct timespec end;
     
@@ -61,23 +68,20 @@ uint64_t get_elapse_microSec(void callback()) {
     return get_elapse_nanoSec(callback) / 1000;
 }
 
-
-static struct timespec ref_timer;
-
-void start_timer() {    
-    if (clock_gettime(CLOCK_MONOTONIC, &ref_timer) != 0) {
-        perror("clock_gettime");
-        return;
-    }
+uint64_t millis() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000 + ts.tv_nsec / 1E6;
 }
 
-uint64_t stop_timer() {
-    return elapse_ns(&ref_timer);
+uint32_t micros() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1E6 + ts.tv_nsec / 1E3;
 }
 
-void print_hex(uint8_t *data, int len) {
-    for (int i = 0; i < len; i++) {
-        printf("%02X ", data[i]);
-    }
-    printf("\n");
+uint32_t seconds() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec;
 }

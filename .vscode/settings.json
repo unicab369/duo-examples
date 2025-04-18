@@ -28,7 +28,11 @@
         "complex": "cpp",
         "cstdlib": "cpp",
         "chrono": "cpp",
-        "modssd1306_draw.h": "c"
+        "modssd1306_draw.h": "c",
+        "ioctl.h": "c",
+        "modtft_text.h": "c",
+        "cstdint": "cpp",
+        "modencoder.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
