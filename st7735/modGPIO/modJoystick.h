@@ -11,6 +11,7 @@ typedef struct {
     int Y_PIN;
     uint32_t last_change_time;
     void (*callback)(int, int);
+    int print_log;
 } M_Joystick;
 
 int joystick_init(M_Joystick *model) {
@@ -52,6 +53,9 @@ void joystick_task(M_Joystick *model, void (*callback)(int, int)) {
     int y_value = atoi(buffer);
     
     callback(x_value, y_value);
+    
+    if (model->print_log)
+        printf("X: %d, Y: %d\n", x_value, y_value);
 }
 
 // close(fd);

@@ -85,3 +85,10 @@ uint32_t seconds() {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec;
 }
+
+int refresh_change_time(uint32_t *last_change_time) {
+    uint32_t now = millis();
+    if (now - *last_change_time < 200) return -1;
+    *last_change_time = now;
+    return now;
+}

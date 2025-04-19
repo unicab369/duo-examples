@@ -10,20 +10,20 @@
 #define ST7735_WIDTH 128
 #define ST7735_HEIGHT 160
 
-#define PURPLE      0x8000
-#define GREEN       0x07E0
-#define BLUE        0x001F
-#define RED         0xF800
-#define WHITE       0xFFFF
-#define BLACK       0x0000
-#define YELLOW      0xFFE0
-#define CYAN        0x07FF
-#define MAGENTA     0xF81F
-#define ORANGE      0xFBE0
-#define BROWN       0xA145
-#define GRAY        0x7BEF
-#define LIGHT_GRAY  0xC618
-#define DARK_GRAY   0x7BEF
+#define ST7735_PURPLE      0x8000
+#define ST7735_GREEN       0x07E0
+#define ST7735_BLUE        0x001F
+#define ST7735_RED         0xF800
+#define ST7735_WHITE       0xFFFF
+#define ST7735_BLACK       0x0000
+#define ST7735_YELLOW      0xFFE0
+#define ST7735_CYAN        0x07FF
+#define ST7735_MAGENTA     0xF81F
+#define ST7735_ORANGE      0xFBE0
+#define ST7735_BROWN       0xA145
+#define ST7735_GRAY        0x7BEF
+#define ST7735_LIGHT_GRAY  0xC618
+#define ST7735_DARK_GRAY   0x7BEF
 
 static uint16_t BACKGROUND_COLOR = 0x0000;
 

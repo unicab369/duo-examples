@@ -32,7 +32,18 @@
         "ioctl.h": "c",
         "modtft_text.h": "c",
         "cstdint": "cpp",
-        "modencoder.h": "c"
+        "modencoder.h": "c",
+        "modpir.h": "c",
+        "modjoystick.h": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "netfwd": "c",
+        "run-led.h": "c",
+        "devmap.h": "c",
+        "gpio_pinmux.h": "c",
+        "bitset": "c",
+        "algorithm": "c",
+        "signal.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

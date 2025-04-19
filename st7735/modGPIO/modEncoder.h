@@ -9,6 +9,7 @@ typedef struct {
     int position;
     int last_state;
     uint32_t last_change_time;
+    int print_log;
 } M_Encoder;
 
 int get_state(int dtPin, int clkPin) {
@@ -53,7 +54,9 @@ void encoder_task(M_Encoder *model, void (*callback)(int, int)) {
         }
 
         callback(model->position, model->direction);
-        // printf("Position: %d, CW: %d\n", model->position, model->direction);
+
+        if (model->print_log)
+            printf("Position: %d, CW: %d\n", model->position, model->direction);
     }
 
     model->last_state = new_state;

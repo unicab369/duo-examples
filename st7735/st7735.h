@@ -15,16 +15,16 @@
 M_Spi_Conf conf = {
     .HOST = 2,
     .CS = 9,      //! the main cs pin
-    // .DC = 5,       // set to -1 when not use
-    // .RST = 4       // set to -1 when not use
     .DC = 4,       // set to -1 when not use
     .RST = 5       // set to -1 when not use
+    // .DC = 5,       // set to -1 when not use
+    // .RST = 4       // set to -1 when not use
 };
 
-#define LINE_COLLOR ORANGE
+#define LINE_COLLOR ST7735_ORANGE
 
 void fill_screen() {
-    modTFT_fillAll(BLUE, &conf);
+    modTFT_fillAll(ST7735_BLUE, &conf);
 }
 
 void draw_horLine() {
@@ -40,7 +40,7 @@ void draw_line1() {
 }
 
 void fill_rect() {
-    modTFT_fillRect(0, 0, 20, 20, BLUE, &conf);
+    modTFT_fillRect(0, 0, 20, 20, ST7735_BLUE, &conf);
 }
 
 void draw_circle() {
@@ -48,7 +48,7 @@ void draw_circle() {
 }
 
 void fill_circle() {
-    modTFT_drawFilledCircle(50, 50, 15, BLACK, &conf);
+    modTFT_drawFilledCircle(50, 50, 15, ST7735_BLACK, &conf);
 }
 
 void draw_rectangle() {
@@ -61,7 +61,7 @@ void draw_poly() {
     
     // Draw thick blue triangle
     modTFT_drawPoly(
-        x_points, y_points, 10, WHITE, 2, &conf
+        x_points, y_points, 10, ST7735_WHITE, 2, &conf
     );
 }
 
@@ -71,7 +71,7 @@ void draw_filled_poly() {
     
     // Draw filled blue triangle
     modTFT_drawFilledPoly(
-        x_points, y_points, 3, BLUE, &conf
+        x_points, y_points, 3, ST7735_BLUE, &conf
     );
 }
 
@@ -87,11 +87,11 @@ int st7735_init() {
     }
 
     modTFT_init(&conf);
-    modTFT_fillAll(RED, &conf); // Fill screen with black
+    modTFT_fillAll(ST7735_RED, &conf); // Fill screen with black
 
     M_TFT_Text tft_text = {
         .x = 0, .y = 0,
-        .color = ORANGE,
+        .color = ST7735_YELLOW,
         .page_wrap = 1,
         .word_wrap = 1,
 

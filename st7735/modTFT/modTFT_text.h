@@ -161,6 +161,8 @@ void modTFT_drawText(M_TFT_Text *model, M_Spi_Conf *config) {
     render_state.current_y = model->y;
     render_state.x0 = model->x;
 
+    digitalWrite(config->CS, 0);
+    
     while (*text) {
         //# Find the end of the current word and calculate its width
         uint8_t word_width = 0;
@@ -232,4 +234,6 @@ void modTFT_drawText(M_TFT_Text *model, M_Spi_Conf *config) {
 
     //! Print the remaining buffer if it has data
     send_text_buffer(model, config);
+
+    digitalWrite(config->CS, 1);
 }
